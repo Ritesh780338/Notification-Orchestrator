@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notification Orchestrator - Dashboard</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1><i class="fas fa-bell"></i> Notification Orchestrator</h1>
+                <p class="subtitle">Centralized Multi-Channel Notification Management</p>
+            </div>
+            <div class="header-info">
+                <span class="badge">Ritesh Sharma - 240410700085</span>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="nav-tabs">
+            <button class="tab-btn active" data-tab="dashboard">
+                <i class="fas fa-chart-line"></i> Dashboard
+            </button>
+            <button class="tab-btn" data-tab="send">
+                <i class="fas fa-paper-plane"></i> Send Notification
+            </button>
+            <button class="tab-btn" data-tab="preferences">
+                <i class="fas fa-cog"></i> User Preferences
+            </button>
+            <button class="tab-btn" data-tab="templates">
+                <i class="fas fa-file-alt"></i> Templates
+            </button>
+            <button class="tab-btn" data-tab="status">
+                <i class="fas fa-search"></i> Check Status
+            </button>
+        </nav>
+
+        <!-- Tab Contents -->
+        <main class="main-content">
+            <!-- Dashboard Tab -->
+            <div id="dashboard" class="tab-content active">
+                <h2>System Overview</h2>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-envelope"></i></div>
+                        <div class="stat-info">
+                            <h3 id="total-notifications">0</h3>
+                            <p>Total Notifications</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon success"><i class="fas fa-check-circle"></i></div>
+                        <div class="stat-info">
+                            <h3 id="delivered-count">0</h3>
+                            <p>Delivered</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon warning"><i class="fas fa-clock"></i></div>
+                        <div class="stat-info">
+                            <h3 id="pending-count">0</h3>
+                            <p>Pending</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon error"><i class="fas fa-times-circle"></i></div>
+                        <div class="stat-info">
+                            <h3 id="failed-count">0</h3>
+                            <p>Failed</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chart-section">
+                    <h3>Notifications by Event Type</h3>
+                    <div id="event-type-chart" class="chart-container"></div>
+                </div>
+
+                <div class="chart-section">
+                    <h3>Channel Performance</h3>
+                    <div id="channel-chart" class="chart-container"></div>
+                </div>
+            </div>
+
+            <!-- Send Notification Tab -->
+            <div id="send" class="tab-content">
+                <h2>Send Notification</h2>
+                
+                <form id="send-notification-form" class="form">
+                    <div class="form-group">
+                        <label for="user-id">User ID *</label>
+                        <input type="text" id="user-id" required placeholder="e.g., user_123">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="event-type">Event Type *</label>
+                        <select id="event-type" required>
+                            <option value="">Select event type</option>
+                            <option value="user_signup">User Signup</option>
+                            <option value="order_confirmation">Order Confirmation</option>
+                            <option value="password_reset">Password Reset</option>
+                            <option value="marketing">Marketing</option>
+                            <option value="security_alert">Security Alert</option>
+                            <option value="system_notification">System Notification</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="priority">Priority</label>
+                        <select id="priority">
+                            <option value="low">Low</option>
+                            <option value="normal" selected>Normal</option>
+                            <option value="high">High</option>
+                            <option value="urgent">Urgent</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Preferred Channels</label>
+                        <div class="checkbox-group">
+                            <label><input type="checkbox" name="channel" value="email" checked> Email</label>
+                            <label><input type="checkbox" name="channel" value="sms"> SMS</label>
+                            <label><input type="checkbox" name="channel" value="push"> Push</label>
+                            <label><input type="checkbox" name="channel" value="inapp"> In-App</label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="metadata">Metadata (JSON)</label>
+                        <textarea id="metadata" rows="5" placeholder='{"first_name": "John", "order_id": "12345"}'></textarea>
+                        <small>Enter metadata as JSON object</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="schedule-time">Schedule Time (Optional)</label>
+                        <input type="datetime-local" id="schedule-time">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-paper-plane"></i> Send Notification
+                    </button>
+                </form>
+
+                <div id="send-result" class="result-box" style="display: none;"></div>
+            </div>
+
+            <!-- User Preferences Tab -->
+            <div id="preferences" class="tab-content">
+                <h2>User Preferences</h2>
+                
+                <div class="form-group">
+                    <label for="pref-user-id">User ID</label>
+                    <div class="input-group">
+                        <input type="text" id="pref-user-id" placeholder="Enter user ID">
+                        <button id="load-preferences" class="btn btn-secondary">
+                            <i class="fas fa-download"></i> Load
+                        </button>
+                    </div>
+                </div>
+
+                <div id="preferences-form-container" style="display: none;">
+                    <form id="preferences-form" class="form">
+                        <h3>Contact Information</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="pref-email">Email</label>
+                                <input type="email" id="pref-email" placeholder="user@example.com">
+                            </div>
+                            <div class="form-group">
+                                <label for="pref-phone">Phone</label>
+                                <input type="tel" id="pref-phone" placeholder="+1234567890">
+                            </div>
+                        </div>
+
+                        <h3>Notification Preferences</h3>
+                        <div id="preferences-grid" class="preferences-grid"></div>
+
+                        <h3>Global Settings</h3>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="global-opt-out">
+                                Opt out of all notifications
+                            </label>
+                        </div>
+
+                        <h3>Quiet Hours</h3>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="quiet-hours-enabled">
+                                Enable quiet hours
+                            </label>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="quiet-start">Start Hour</label>
+                                <input type="number" id="quiet-start" min="0" max="23" value="22">
+                            </div>
+                            <div class="form-group">
+                                <label for="quiet-end">End Hour</label>
+                                <input type="number" id="quiet-end" min="0" max="23" value="7">
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Save Preferences
+                        </button>
+                    </form>
+                </div>
+
+                <div id="preferences-result" class="result-box" style="display: none;"></div>
+            </div>
+
+            <!-- Templates Tab -->
+            <div id="templates" class="tab-content">
+                <h2>Notification Templates</h2>
+                
+                <button id="show-template-form" class="btn btn-secondary mb-3">
+                    <i class="fas fa-plus"></i> Create New Template
+                </button>
+
+                <div id="template-form-container" style="display: none;">
+                    <form id="template-form" class="form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="template-id">Template ID *</label>
+                                <input type="text" id="template-id" required placeholder="tpl_example">
+                            </div>
+                            <div class="form-group">
+                                <label for="template-name">Name *</label>
+                                <input type="text" id="template-name" required placeholder="My Template">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="template-channel">Channel *</label>
+                                <select id="template-channel" required>
+                                    <option value="">Select channel</option>
+                                    <option value="email">Email</option>
+                                    <option value="sms">SMS</option>
+                                    <option value="push">Push</option>
+                                    <option value="inapp">In-App</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="template-event-type">Event Type *</label>
+                                <input type="text" id="template-event-type" required placeholder="user_signup">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="template-subject">Subject (Email only)</label>
+                            <input type="text" id="template-subject" placeholder="Welcome {{first_name}}!">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="template-body">Body *</label>
+                            <textarea id="template-body" rows="6" required placeholder="Hi {{first_name}}, welcome to our platform!"></textarea>
+                            <small>Use {{variable_name}} for dynamic content</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="template-variables">Variables (comma-separated)</label>
+                            <input type="text" id="template-variables" placeholder="first_name, order_id, amount">
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Save Template
+                        </button>
+                        <button type="button" id="cancel-template" class="btn btn-secondary">Cancel</button>
+                    </form>
+                </div>
+
+                <div id="templates-list" class="templates-list"></div>
+            </div>
+
+            <!-- Check Status Tab -->
+            <div id="status" class="tab-content">
+                <h2>Check Notification Status</h2>
+                
+                <div class="form-group">
+                    <label for="status-id">Notification ID or Event ID</label>
+                    <div class="input-group">
+                        <input type="text" id="status-id" placeholder="evt_xxxxx or notification ID">
+                        <button id="check-status" class="btn btn-secondary">
+                            <i class="fas fa-search"></i> Check
+                        </button>
+                    </div>
+                </div>
+
+                <div id="status-result" class="status-result" style="display: none;"></div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>&copy; 2024 Notification Orchestrator | Ritesh Sharma (240410700085) | 4 Sem Project</p>
+        </footer>
+    </div>
+
+    <script src="/js/app.js"></script>
+</body>
+</html>

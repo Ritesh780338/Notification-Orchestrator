@@ -1,90 +1,90 @@
 # Notification Orchestrator
 
-A centralized multi-channel notification management service that handles Email, SMS, Push, and In-App notifications with intelligent routing, user preferences, scheduling, and comprehensive tracking.
+> **Centralized Multi-Channel Notification Management Service**
+
+A production-ready notification orchestration system with frontend dashboard, backend API, and MongoDB database integration.
 
 ## 📋 Project Information
 - **Student**: Ritesh Sharma
 - **Roll No**: 240410700085
 - **Year & Section**: 4 Sem
-- **Project Type**: Application Development
+- **Project Type**: Application Development (Full Stack)
+
+---
 
 ## ✨ Features
 
-- 📧 Multi-channel notification delivery (Email, SMS, Push, In-App)
-- ⚙️ User preference management with opt-in/opt-out controls
-- 📝 Template engine with variable substitution
-- ⏰ Scheduling and throttling capabilities
-- 🔄 Retry mechanism with exponential backoff
-- 📊 Comprehensive delivery tracking and status monitoring
-- 🚀 RESTful API for event ingestion and status queries
-- 🔒 Rate limiting and quiet hours support
-- 📈 Structured logging and observability
+### Core Functionality
+- 📧 **Multi-Channel Delivery**: Email, SMS, Push, and In-App notifications
+- 🎯 **Intelligent Routing**: Smart channel selection based on user preferences
+- ⚙️ **Preference Management**: Complete user opt-in/opt-out controls
+- 📝 **Template Engine**: Dynamic templates with variable substitution
+- ⏰ **Scheduling**: Send notifications immediately or schedule for later
+- 🔄 **Retry Logic**: Exponential backoff with configurable attempts
+- 📊 **Real-time Tracking**: Complete delivery lifecycle monitoring
+- 🚦 **Rate Limiting**: Per-user, per-channel throttling
+- 🌙 **Quiet Hours**: Respect user sleep schedules
+- 📈 **Analytics Dashboard**: Visual statistics and performance metrics
 
-## 🏗️ Architecture Components
+### Technical Features
+- 🎨 **Modern Frontend**: Responsive web dashboard with real-time updates
+- 🔌 **RESTful API**: Complete API for all operations
+- 💾 **MongoDB Database**: Scalable NoSQL data storage
+- ⚡ **Redis Caching**: Fast rate limiting and session management
+- 🔒 **Security**: Rate limiting, input validation, CORS, Helmet
+- 📝 **Logging**: Structured logging with Winston
+- 🧪 **Testing Ready**: Jest configuration included
 
-1. API Gateway
-2. Notification Ingestion Service
-3. Orchestration Engine
-4. Template Engine
-5. Preference Service
-6. Channel Adapters (Email/SMS/Push/In-App)
-7. Delivery Tracker
-8. Dead Letter Queue
-9. Analytics & Monitoring Layer
+---
+
+## 🏗️ System Architecture
+
+```
+┌─────────────────┐
+│  Web Dashboard  │
+│   (Frontend)    │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│   API Gateway   │
+│   (Express.js)  │
+└────────┬────────┘
+         │
+    ┌────┴────┐
+    ▼         ▼
+┌────────┐ ┌──────────┐
+│MongoDB │ │  Redis   │
+└────────┘ └──────────┘
+    │
+    ▼
+┌─────────────────────────────────┐
+│   Orchestration Engine          │
+│  ┌──────────────────────────┐  │
+│  │ Preference Service       │  │
+│  │ Template Service         │  │
+│  │ Ingestion Service        │  │
+│  └──────────────────────────┘  │
+└────────┬────────────────────────┘
+         │
+    ┌────┴────┬────────┬────────┐
+    ▼         ▼        ▼        ▼
+┌────────┐ ┌─────┐ ┌──────┐ ┌────────┐
+│ Email  │ │ SMS │ │ Push │ │ In-App │
+│Adapter │ │Adapt│ │Adapt │ │Adapter │
+└────────┘ └─────┘ └──────┘ └────────┘
+```
+
+---
 
 ## 🛠️ Tech Stack
 
-- **Backend**: Node.js + Express.js
-- **Database**: PostgreSQL
+### Backend
+- **Runtime**: Node.js v16+
+- **Framework**: Express.js
+- **Database**: MongoDB (Mongoose ODM)
 - **Cache**: Redis
-- **Email**: Nodemailer (SMTP)
-- **SMS**: Mock (Twilio/AWS SNS ready)
-- **Push**: Mock (FCM/APNs ready)
-- **Validation**: Joi
-- **Logging**: Winston
-- **Security**: Helmet, CORS
-
-## 🚀 Quick Start
-
-### Prerequisites
-- Node.js v16+
-- PostgreSQL v12+
-- Redis v6+
-
-### Installation
-
-```bash
-# 1. Install dependencies
-npm install
-
-# 2. Set up environment variables
-cp .env.example .env
-# Edit .env with your database and email credentials
-
-# 3. Create database
-createdb notification_orchestrator
-
-# 4. Run migrations
-npm run migrate
-
-# 5. Start Redis
-redis-server
-
-# 6. Start the application
-npm run dev
-```
-
-The server will start on `http://localhost:3000`
-
-## 📚 Documentation
-
-- [Setup Guide](docs/SETUP_GUIDE.md) - Detailed installation and configuration
-- [API Documentation](docs/API_DOCUMENTATION.md) - Complete API reference
-- [Architecture](docs/ARCHITECTURE.md) - System design and architecture
-- [Project Structure](project-structure.md) - Code organization
-
-## 🔌 API Endpoints
-
+- **Val
 ### Event Ingestion
 ```bash
 POST /api/notifications/events

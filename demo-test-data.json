@@ -1,0 +1,134 @@
+{
+  "testScenarios": [
+    {
+      "name": "User Signup Notification",
+      "userId": "user_12345",
+      "eventType": "user_signup",
+      "priority": "normal",
+      "preferredChannels": ["email", "sms"],
+      "metadata": {
+        "first_name": "John",
+        "last_name": "Doe",
+        "email": "john.doe@example.com",
+        "phone": "+1234567890",
+        "signup_date": "2026-04-21"
+      }
+    },
+    {
+      "name": "Order Confirmation",
+      "userId": "user_67890",
+      "eventType": "order_confirmation",
+      "priority": "high",
+      "preferredChannels": ["email", "push", "sms"],
+      "metadata": {
+        "first_name": "Jane",
+        "last_name": "Smith",
+        "email": "jane.smith@example.com",
+        "order_id": "ORD-2026-001",
+        "amount": "149.99",
+        "items": "3",
+        "delivery_date": "2026-04-25"
+      }
+    },
+    {
+      "name": "Password Reset",
+      "userId": "user_11111",
+      "eventType": "password_reset",
+      "priority": "urgent",
+      "preferredChannels": ["email", "sms"],
+      "metadata": {
+        "first_name": "Michael",
+        "email": "michael.brown@example.com",
+        "reset_code": "ABC123XYZ",
+        "expiry_time": "30 minutes",
+        "ip_address": "192.168.1.100"
+      }
+    },
+    {
+      "name": "Marketing Campaign",
+      "userId": "user_22222",
+      "eventType": "marketing",
+      "priority": "low",
+      "preferredChannels": ["email", "push"],
+      "metadata": {
+        "first_name": "Sarah",
+        "email": "sarah.wilson@example.com",
+        "campaign_name": "Spring Sale 2026",
+        "discount_code": "SPRING30",
+        "discount_percentage": "30",
+        "valid_until": "2026-05-01"
+      }
+    },
+    {
+      "name": "Security Alert",
+      "userId": "user_33333",
+      "eventType": "security_alert",
+      "priority": "urgent",
+      "preferredChannels": ["email", "sms", "push", "inapp"],
+      "metadata": {
+        "first_name": "David",
+        "email": "david.lee@example.com",
+        "alert_type": "Suspicious Login Attempt",
+        "timestamp": "2026-04-21 10:45:00",
+        "location": "New York, USA",
+        "device": "Unknown Device"
+      }
+    },
+    {
+      "name": "System Notification",
+      "userId": "user_44444",
+      "eventType": "system_notification",
+      "priority": "normal",
+      "preferredChannels": ["inapp", "email"],
+      "metadata": {
+        "first_name": "Emily",
+        "email": "emily.davis@example.com",
+        "notification_type": "System Maintenance",
+        "maintenance_date": "2026-04-22",
+        "duration": "2 hours",
+        "affected_services": "Payment Gateway"
+      }
+    },
+    {
+      "name": "Scheduled Notification",
+      "userId": "user_55555",
+      "eventType": "user_signup",
+      "priority": "normal",
+      "preferredChannels": ["email"],
+      "scheduleTime": "2026-04-21T18:00:00Z",
+      "metadata": {
+        "first_name": "Robert",
+        "email": "robert.taylor@example.com",
+        "welcome_bonus": "50"
+      }
+    }
+  ],
+  
+  "quickTestData": {
+    "userId": "demo_user_001",
+    "eventType": "user_signup",
+    "priority": "normal",
+    "preferredChannels": ["email", "sms", "push"],
+    "metadata": {
+      "first_name": "Demo",
+      "last_name": "User",
+      "email": "demo@example.com",
+      "phone": "+1234567890"
+    }
+  },
+
+  "curlCommands": [
+    {
+      "name": "User Signup",
+      "command": "curl -X POST http://localhost:3000/api/notifications/events -H \"Content-Type: application/json\" -d \"{\\\"user_id\\\":\\\"user_12345\\\",\\\"event_type\\\":\\\"user_signup\\\",\\\"priority\\\":\\\"normal\\\",\\\"preferred_channels\\\":[\\\"email\\\",\\\"sms\\\"],\\\"metadata\\\":{\\\"first_name\\\":\\\"John\\\",\\\"email\\\":\\\"john.doe@example.com\\\"}}\""
+    },
+    {
+      "name": "Order Confirmation",
+      "command": "curl -X POST http://localhost:3000/api/notifications/events -H \"Content-Type: application/json\" -d \"{\\\"user_id\\\":\\\"user_67890\\\",\\\"event_type\\\":\\\"order_confirmation\\\",\\\"priority\\\":\\\"high\\\",\\\"preferred_channels\\\":[\\\"email\\\",\\\"push\\\"],\\\"metadata\\\":{\\\"first_name\\\":\\\"Jane\\\",\\\"order_id\\\":\\\"ORD-2026-001\\\",\\\"amount\\\":\\\"149.99\\\"}}\""
+    },
+    {
+      "name": "Security Alert",
+      "command": "curl -X POST http://localhost:3000/api/notifications/events -H \"Content-Type: application/json\" -d \"{\\\"user_id\\\":\\\"user_33333\\\",\\\"event_type\\\":\\\"security_alert\\\",\\\"priority\\\":\\\"urgent\\\",\\\"preferred_channels\\\":[\\\"email\\\",\\\"sms\\\",\\\"push\\\"],\\\"metadata\\\":{\\\"first_name\\\":\\\"David\\\",\\\"alert_type\\\":\\\"Suspicious Login\\\",\\\"timestamp\\\":\\\"2026-04-21 10:45:00\\\"}}\""
+    }
+  ]
+}

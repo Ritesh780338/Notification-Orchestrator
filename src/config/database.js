@@ -1,20 +1,28 @@
-const { Pool } = require('pg');
-require('dotenv').config();
+const mongoose = require('mongoose');
+const logger = require('./logger');
 
-const pool = new Pool({
-  host: process.env.DB_HOST || 'localhost',
-  port: process.env.DB_PORT || 5432,
-  database: process.env.DB_NAME || 'notification_orchestrator',
-  user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD,
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+const connectDB = async () => {
+  try {
+    const conn = await mongoose.connect(process.env.MONGODB_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+
+    logger.info(`MongoDB Connected: ${conn.connection.host}`);
+    return conn;
+  } catch (error) {
+    logger.error('MongoDB connection error:', error);
+    process.exit(1);
+  }
+};
+
+// Handle connection events
+mongoose.connection.on('disconnected', () => {
+  logger.warn('MongoDB disconnected');
 });
 
-pool.on('error', (err) => {
-  console.error('Unexpected database error:', err);
-  process.exit(-1);
+mongoose.connection.on('error', (err) => {
+  logger.error('MongoDB error:', err);
 });
 
-module.exports = pool;
+module.exports = connectDB;
