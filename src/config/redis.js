@@ -5,6 +5,12 @@ const redisClient = redis.createClient({
   socket: {
     host: process.env.REDIS_HOST || 'localhost',
     port: parseInt(process.env.REDIS_PORT) || 6379,
+    tls: process.env.REDIS_TLS === 'true' || 
+         (process.env.REDIS_HOST && process.env.REDIS_HOST.includes('redislabs.com')),
+    reconnectStrategy: (retries) => {
+      if (retries > 3) return new Error('Redis max retries reached');
+      return Math.min(retries * 500, 2000);
+    }
   },
   username: process.env.REDIS_USERNAME || undefined,
   password: process.env.REDIS_PASSWORD || undefined,

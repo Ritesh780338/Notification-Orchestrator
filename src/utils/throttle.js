@@ -4,29 +4,41 @@ const redisClient = require('../config/redis');
  * Check if user has exceeded rate limit
  */
 async function checkRateLimit(userId, channel, maxPerHour = 5) {
-  const key = `rate_limit:${userId}:${channel}`;
-  const count = await redisClient.get(key);
-  
-  if (count && parseInt(count) >= maxPerHour) {
-    return false; // Rate limit exceeded
+  try {
+    if (!redisClient.isReady) return true; // Redis unavailable, allow through
+    const key = `rate_limit:${userId}:${channel}`;
+    const count = await redisClient.get(key);
+    
+    if (count && parseInt(count) >= maxPerHour) {
+      return false; // Rate limit exceeded
+    }
+    
+    return true; // Within limit
+  } catch (err) {
+    console.warn('Rate limit check failed (Redis unavailable), allowing request:', err.message);
+    return true;
   }
-  
-  return true; // Within limit
 }
 
 /**
  * Increment rate limit counter
  */
 async function incrementRateLimit(userId, channel) {
-  const key = `rate_limit:${userId}:${channel}`;
-  const count = await redisClient.incr(key);
-  
-  if (count === 1) {
-    // Set expiry for 1 hour on first increment
-    await redisClient.expire(key, 3600);
+  try {
+    if (!redisClient.isReady) return 0; // Redis unavailable, skip
+    const key = `rate_limit:${userId}:${channel}`;
+    const count = await redisClient.incr(key);
+    
+    if (count === 1) {
+      // Set expiry for 1 hour on first increment
+      await redisClient.expire(key, 3600);
+    }
+    
+    return count;
+  } catch (err) {
+    console.warn('Rate limit increment failed (Redis unavailable):', err.message);
+    return 0;
   }
-  
-  return count;
 }
 
 /**

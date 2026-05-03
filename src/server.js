@@ -88,9 +88,13 @@ async function startServer() {
     // Connect to MongoDB
     await connectDB();
     
-    // Connect to Redis
-    await redisClient.connect();
-    logger.info('Redis connected successfully');
+    // Connect to Redis (non-fatal if it fails)
+    try {
+      await redisClient.connect();
+      logger.info('Redis connected successfully');
+    } catch (redisError) {
+      logger.warn('Redis connection failed, continuing without Redis:', redisError.message);
+    }
 
     // Initialize default templates
     await initializeTemplates();
@@ -182,13 +186,13 @@ async function initializeTemplates() {
 // Graceful shutdown
 process.on('SIGTERM', async () => {
   logger.info('SIGTERM received, shutting down gracefully...');
-  await redisClient.quit();
+  if (redisClient.isReady) await redisClient.quit();
   process.exit(0);
 });
 
 process.on('SIGINT', async () => {
   logger.info('SIGINT received, shutting down gracefully...');
-  await redisClient.quit();
+  if (redisClient.isReady) await redisClient.quit();
   process.exit(0);
 });
 
