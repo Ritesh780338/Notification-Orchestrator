@@ -43,7 +43,7 @@ const templatesRouter = require('./api/routes/templates');
 console.log('[STARTUP] templates route loaded');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 0;
 
 // Middleware
 app.use(helmet());
