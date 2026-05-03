@@ -152,8 +152,8 @@
                                         <i class="fas fa-user"></i> User ID
                                         <span class="required">*</span>
                                     </label>
-                                    <input type="text" id="user-id" required placeholder="e.g., user_123">
-                                    <span class="field-hint">The recipient's unique identifier</span>
+                                    <input type="text" id="user-id" required placeholder="e.g., user_123 or user_001">
+                                    <span class="field-hint">The recipient's unique identifier (required)</span>
                                 </div>
 
                                 <div class="form-row">
@@ -221,12 +221,17 @@
                                         <i class="fas fa-code"></i> Metadata (JSON)
                                     </label>
                                     <div class="code-editor-wrap">
-                                        <textarea id="metadata" rows="5" placeholder='{"first_name": "John", "order_id": "12345"}'></textarea>
+                                        <textarea id="metadata" rows="6" placeholder='Example:
+{
+  "first_name": "Priya",
+  "order_id": "ORD-123",
+  "amount": "₹2,499"
+}'></textarea>
                                         <button type="button" class="code-format-btn" onclick="formatJSON()" title="Format JSON">
                                             <i class="fas fa-align-left"></i>
                                         </button>
                                     </div>
-                                    <span class="field-hint">Template variables as JSON — use {{variable}} in templates</span>
+                                    <span class="field-hint">💡 Template variables as JSON — use {{variable}} in templates. Click "Auto-Fill Demo" for examples!</span>
                                 </div>
 
                                 <div class="form-group">
@@ -249,6 +254,20 @@
                             </form>
 
                             <div id="send-result" class="result-box" style="display:none;"></div>
+                            
+                            <!-- Quick Help Section -->
+                            <div class="help-box" style="margin-top: 1rem; padding: 1rem; background: #1e293b; border-radius: 8px; border-left: 4px solid #6366f1;">
+                                <h4 style="margin: 0 0 0.5rem 0; color: #6366f1; font-size: 0.9rem;">
+                                    <i class="fas fa-info-circle"></i> Quick Testing Guide
+                                </h4>
+                                <ul style="margin: 0; padding-left: 1.5rem; font-size: 0.85rem; color: #94a3b8; line-height: 1.6;">
+                                    <li><strong>Auto-Fill:</strong> Click "Auto-Fill Demo" button above to populate with test data</li>
+                                    <li><strong>User ID:</strong> Any string like <code>user_001</code> or <code>test_user_123</code></li>
+                                    <li><strong>Metadata:</strong> Must be valid JSON. Example: <code>{"first_name": "John"}</code></li>
+                                    <li><strong>Channels:</strong> Select at least one channel (Email, SMS, Push, or In-App)</li>
+                                    <li><strong>Console:</strong> Press <kbd>F12</kbd> to see detailed logs and errors</li>
+                                </ul>
+                            </div>
                         </div>
 
                         <!-- Demo Scenarios Panel -->

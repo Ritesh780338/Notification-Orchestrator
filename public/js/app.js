@@ -343,11 +343,13 @@ function initSendTab() {
 
   // Reset
   window.resetForm = () => {
+    console.log('[ResetForm] Resetting form');
     document.getElementById('send-notification-form').reset();
     document.querySelectorAll('.channel-chip').forEach(chip => {
       chip.classList.toggle('checked', chip.dataset.channel === 'email');
     });
     document.getElementById('send-result').style.display = 'none';
+    showToast('Form reset', 'info');
   };
 
   // Form submit
