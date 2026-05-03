@@ -61,7 +61,21 @@ npm start
 
 ---
 
-## 🛠️ Tech Stack
+## � Documentation
+
+Complete documentation is available in the [`docs/`](docs/) folder:
+
+- **[Documentation Index](docs/README.md)** - Start here for all documentation
+- **[Setup Guide](docs/guides/SETUP.md)** - Installation and configuration
+- **[Quick Deploy](docs/guides/QUICK_DEPLOY.md)** - Deploy in 10 minutes
+- **[Deployment Guide](docs/guides/DEPLOYMENT.md)** - Complete deployment options
+- **[API Reference](docs/api/API_REFERENCE.md)** - Complete API documentation
+- **[Project Structure](docs/PROJECT_STRUCTURE.md)** - Code organization
+- **[System Status](docs/SYSTEM_STATUS.md)** - Current system status
+
+---
+
+## �🛠️ Tech Stack
 
 ### Backend
 - **Runtime**: Node.js
