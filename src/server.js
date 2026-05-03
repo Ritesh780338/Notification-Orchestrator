@@ -1,21 +1,46 @@
+// ============================================================
+// STARTUP: log immediately so Render shows output right away
+// ============================================================
+console.log('[STARTUP] server.js loaded, Node:', process.version);
+console.log('[STARTUP] NODE_ENV:', process.env.NODE_ENV);
+console.log('[STARTUP] PORT:', process.env.PORT);
+console.log('[STARTUP] MONGODB_URI set:', !!process.env.MONGODB_URI);
+console.log('[STARTUP] REDIS_HOST:', process.env.REDIS_HOST);
+console.log('[STARTUP] REDIS_PORT:', process.env.REDIS_PORT);
+
 const express = require('express');
+console.log('[STARTUP] express loaded');
+
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 require('dotenv').config();
+console.log('[STARTUP] core modules loaded');
 
 const connectDB = require('./config/database');
+console.log('[STARTUP] database module loaded');
+
 const logger = require('./config/logger');
+console.log('[STARTUP] logger module loaded');
+
 const redisClient = require('./config/redis');
+console.log('[STARTUP] redis module loaded');
+
 const errorHandler = require('./api/middleware/errorHandler');
 const ingestionService = require('./services/ingestion.service');
+console.log('[STARTUP] services loaded');
 
 // Import routes
+console.log('[STARTUP] loading routes...');
 const eventsRouter = require('./api/routes/events');
+console.log('[STARTUP] events route loaded');
 const preferencesRouter = require('./api/routes/preferences');
+console.log('[STARTUP] preferences route loaded');
 const statusRouter = require('./api/routes/status');
+console.log('[STARTUP] status route loaded');
 const templatesRouter = require('./api/routes/templates');
+console.log('[STARTUP] templates route loaded');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -35,7 +60,6 @@ const limiter = rateLimit({
   max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,
   message: 'Too many requests from this IP, please try again later.'
 });
-
 app.use('/api/', limiter);
 
 // Health check
@@ -82,54 +106,67 @@ app.get('*', (req, res) => {
 // Error handler
 app.use(errorHandler);
 
-// Start server
+// ============================================================
+// START SERVER
+// ============================================================
 async function startServer() {
+  console.log('[STARTUP] startServer() called');
+
+  // --- MongoDB ---
+  console.log('[STARTUP] Connecting to MongoDB...');
   try {
-    // Connect to MongoDB
-    try {
-      await connectDB();
-    } catch (dbError) {
-      logger.error('FATAL: MongoDB connection failed:', dbError.message);
-      logger.error('Check MONGODB_URI environment variable');
-      process.exit(1);
-    }
-
-    // Connect to Redis (non-fatal if it fails)
-    try {
-      await redisClient.connect();
-      logger.info('Redis connected successfully');
-    } catch (redisError) {
-      logger.warn('Redis connection failed, continuing without Redis:', redisError.message);
-    }
-
-    // Initialize default templates
-    await initializeTemplates();
-
-    // Start scheduled notification processor (every minute)
-    setInterval(() => {
-      ingestionService.processScheduledNotifications()
-        .catch(err => logger.error('Scheduled processor error:', err));
-    }, 60000);
-
-    app.listen(PORT, () => {
-      logger.info(`🚀 Notification Orchestrator running on port ${PORT}`);
-      logger.info(`📝 Environment: ${process.env.NODE_ENV || 'development'}`);
-      logger.info(`🔗 Frontend: http://localhost:${PORT}`);
-      logger.info(`🔗 API: http://localhost:${PORT}/api`);
-      logger.info(`💾 Database: MongoDB`);
-    });
-
-  } catch (error) {
-    logger.error('FATAL: Failed to start server:', error.message);
-    console.error('FATAL startup error:', error);
+    await connectDB();
+    console.log('[STARTUP] ✅ MongoDB connected');
+  } catch (dbError) {
+    console.error('[STARTUP] ❌ MongoDB connection FAILED:', dbError.message);
+    console.error('[STARTUP] Full error:', dbError);
     process.exit(1);
   }
+
+  // --- Redis ---
+  console.log('[STARTUP] Connecting to Redis...');
+  try {
+    await redisClient.connect();
+    console.log('[STARTUP] ✅ Redis connected');
+    logger.info('Redis connected successfully');
+  } catch (redisError) {
+    console.warn('[STARTUP] ⚠️  Redis connection failed (non-fatal):', redisError.message);
+    logger.warn('Redis connection failed, continuing without Redis:', redisError.message);
+  }
+
+  // --- Templates ---
+  console.log('[STARTUP] Initializing default templates...');
+  try {
+    await initializeTemplates();
+    console.log('[STARTUP] ✅ Templates initialized');
+  } catch (tplError) {
+    console.warn('[STARTUP] ⚠️  Template init failed (non-fatal):', tplError.message);
+  }
+
+  // --- Scheduled processor ---
+  setInterval(() => {
+    ingestionService.processScheduledNotifications()
+      .catch(err => logger.error('Scheduled processor error:', err));
+  }, 60000);
+
+  // --- Listen ---
+  app.listen(PORT, () => {
+    console.log(`[STARTUP] ✅ Server listening on port ${PORT}`);
+    logger.info(`🚀 Notification Orchestrator running on port ${PORT}`);
+    logger.info(`📝 Environment: ${process.env.NODE_ENV || 'development'}`);
+    logger.info(`🔗 Frontend: http://localhost:${PORT}`);
+    logger.info(`🔗 API: http://localhost:${PORT}/api`);
+    logger.info(`💾 Database: MongoDB`);
+  });
 }
 
+// ============================================================
+// TEMPLATE INITIALIZER
+// ============================================================
 async function initializeTemplates() {
   const Template = require('./models/Template');
   const templateService = require('./services/template.service');
-  
+
   const defaultTemplates = [
     {
       template_id: 'tpl_user_signup_email',
@@ -177,30 +214,41 @@ async function initializeTemplates() {
     }
   ];
 
-  try {
-    const count = await Template.countDocuments();
-    if (count === 0) {
-      for (const template of defaultTemplates) {
-        await templateService.saveTemplate(template);
-      }
-      logger.info('Default templates initialized');
+  const count = await Template.countDocuments();
+  if (count === 0) {
+    for (const template of defaultTemplates) {
+      await templateService.saveTemplate(template);
     }
-  } catch (error) {
-    logger.error('Error initializing templates:', error);
+    logger.info('Default templates initialized');
   }
 }
 
-// Graceful shutdown
+// ============================================================
+// GRACEFUL SHUTDOWN
+// ============================================================
 process.on('SIGTERM', async () => {
-  logger.info('SIGTERM received, shutting down gracefully...');
+  console.log('[SHUTDOWN] SIGTERM received');
   if (redisClient.isReady) await redisClient.quit();
   process.exit(0);
 });
 
 process.on('SIGINT', async () => {
-  logger.info('SIGINT received, shutting down gracefully...');
+  console.log('[SHUTDOWN] SIGINT received');
   if (redisClient.isReady) await redisClient.quit();
   process.exit(0);
+});
+
+// Catch any unhandled errors so they show in logs
+process.on('uncaughtException', (err) => {
+  console.error('[FATAL] Uncaught Exception:', err.message);
+  console.error(err.stack);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[FATAL] Unhandled Rejection at:', promise);
+  console.error('[FATAL] Reason:', reason);
+  process.exit(1);
 });
 
 startServer();
