@@ -86,8 +86,14 @@ app.use(errorHandler);
 async function startServer() {
   try {
     // Connect to MongoDB
-    await connectDB();
-    
+    try {
+      await connectDB();
+    } catch (dbError) {
+      logger.error('FATAL: MongoDB connection failed:', dbError.message);
+      logger.error('Check MONGODB_URI environment variable');
+      process.exit(1);
+    }
+
     // Connect to Redis (non-fatal if it fails)
     try {
       await redisClient.connect();
@@ -114,7 +120,8 @@ async function startServer() {
     });
 
   } catch (error) {
-    logger.error('Failed to start server:', error);
+    logger.error('FATAL: Failed to start server:', error.message);
+    console.error('FATAL startup error:', error);
     process.exit(1);
   }
 }
