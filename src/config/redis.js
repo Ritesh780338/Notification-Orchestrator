@@ -7,7 +7,7 @@ const redisClient = redis.createClient({
   socket: {
     host: process.env.REDIS_HOST || 'localhost',
     port: parseInt(process.env.REDIS_PORT) || 6379,
-    tls: process.env.REDIS_TLS === 'true' || isRedisCloud,
+    tls: process.env.REDIS_TLS === 'true',
     connectTimeout: 10000, // Fail fast after 10s
     reconnectStrategy: (retries) => {
       if (retries >= 3) {
