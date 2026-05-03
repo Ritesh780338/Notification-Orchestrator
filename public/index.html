@@ -8,300 +8,471 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <div class="container">
-        <!-- Header -->
-        <header class="header">
-            <div class="header-content">
-                <h1><i class="fas fa-bell"></i> Notification Orchestrator</h1>
-                <p class="subtitle">Centralized Multi-Channel Notification Management</p>
-            </div>
-            <div class="header-info">
-                <span class="badge">Ritesh Sharma - 240410700085</span>
-            </div>
-        </header>
-
-        <!-- Navigation -->
-        <nav class="nav-tabs">
-            <button class="tab-btn active" data-tab="dashboard">
-                <i class="fas fa-chart-line"></i> Dashboard
-            </button>
-            <button class="tab-btn" data-tab="send">
-                <i class="fas fa-paper-plane"></i> Send Notification
-            </button>
-            <button class="tab-btn" data-tab="preferences">
-                <i class="fas fa-cog"></i> User Preferences
-            </button>
-            <button class="tab-btn" data-tab="templates">
-                <i class="fas fa-file-alt"></i> Templates
-            </button>
-            <button class="tab-btn" data-tab="status">
-                <i class="fas fa-search"></i> Check Status
-            </button>
-        </nav>
-
-        <!-- Tab Contents -->
-        <main class="main-content">
-            <!-- Dashboard Tab -->
-            <div id="dashboard" class="tab-content active">
-                <h2>System Overview</h2>
-                
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-icon"><i class="fas fa-envelope"></i></div>
-                        <div class="stat-info">
-                            <h3 id="total-notifications">0</h3>
-                            <p>Total Notifications</p>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon success"><i class="fas fa-check-circle"></i></div>
-                        <div class="stat-info">
-                            <h3 id="delivered-count">0</h3>
-                            <p>Delivered</p>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon warning"><i class="fas fa-clock"></i></div>
-                        <div class="stat-info">
-                            <h3 id="pending-count">0</h3>
-                            <p>Pending</p>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon error"><i class="fas fa-times-circle"></i></div>
-                        <div class="stat-info">
-                            <h3 id="failed-count">0</h3>
-                            <p>Failed</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="chart-section">
-                    <h3>Notifications by Event Type</h3>
-                    <div id="event-type-chart" class="chart-container"></div>
-                </div>
-
-                <div class="chart-section">
-                    <h3>Channel Performance</h3>
-                    <div id="channel-chart" class="chart-container"></div>
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-icon"><i class="fas fa-bell"></i></div>
+                <div class="brand-text">
+                    <span class="brand-name">NotifyHub</span>
+                    <span class="brand-sub">Orchestrator</span>
                 </div>
             </div>
-
-            <!-- Send Notification Tab -->
-            <div id="send" class="tab-content">
-                <h2>Send Notification</h2>
-                
-                <form id="send-notification-form" class="form">
-                    <div class="form-group">
-                        <label for="user-id">User ID *</label>
-                        <input type="text" id="user-id" required placeholder="e.g., user_123">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="event-type">Event Type *</label>
-                        <select id="event-type" required>
-                            <option value="">Select event type</option>
-                            <option value="user_signup">User Signup</option>
-                            <option value="order_confirmation">Order Confirmation</option>
-                            <option value="password_reset">Password Reset</option>
-                            <option value="marketing">Marketing</option>
-                            <option value="security_alert">Security Alert</option>
-                            <option value="system_notification">System Notification</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="priority">Priority</label>
-                        <select id="priority">
-                            <option value="low">Low</option>
-                            <option value="normal" selected>Normal</option>
-                            <option value="high">High</option>
-                            <option value="urgent">Urgent</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Preferred Channels</label>
-                        <div class="checkbox-group">
-                            <label><input type="checkbox" name="channel" value="email" checked> Email</label>
-                            <label><input type="checkbox" name="channel" value="sms"> SMS</label>
-                            <label><input type="checkbox" name="channel" value="push"> Push</label>
-                            <label><input type="checkbox" name="channel" value="inapp"> In-App</label>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="metadata">Metadata (JSON)</label>
-                        <textarea id="metadata" rows="5" placeholder='{"first_name": "John", "order_id": "12345"}'></textarea>
-                        <small>Enter metadata as JSON object</small>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="schedule-time">Schedule Time (Optional)</label>
-                        <input type="datetime-local" id="schedule-time">
-                    </div>
-
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-paper-plane"></i> Send Notification
-                    </button>
-                </form>
-
-                <div id="send-result" class="result-box" style="display: none;"></div>
-            </div>
-
-            <!-- User Preferences Tab -->
-            <div id="preferences" class="tab-content">
-                <h2>User Preferences</h2>
-                
-                <div class="form-group">
-                    <label for="pref-user-id">User ID</label>
-                    <div class="input-group">
-                        <input type="text" id="pref-user-id" placeholder="Enter user ID">
-                        <button id="load-preferences" class="btn btn-secondary">
-                            <i class="fas fa-download"></i> Load
-                        </button>
-                    </div>
-                </div>
-
-                <div id="preferences-form-container" style="display: none;">
-                    <form id="preferences-form" class="form">
-                        <h3>Contact Information</h3>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="pref-email">Email</label>
-                                <input type="email" id="pref-email" placeholder="user@example.com">
-                            </div>
-                            <div class="form-group">
-                                <label for="pref-phone">Phone</label>
-                                <input type="tel" id="pref-phone" placeholder="+1234567890">
-                            </div>
-                        </div>
-
-                        <h3>Notification Preferences</h3>
-                        <div id="preferences-grid" class="preferences-grid"></div>
-
-                        <h3>Global Settings</h3>
-                        <div class="form-group">
-                            <label>
-                                <input type="checkbox" id="global-opt-out">
-                                Opt out of all notifications
-                            </label>
-                        </div>
-
-                        <h3>Quiet Hours</h3>
-                        <div class="form-group">
-                            <label>
-                                <input type="checkbox" id="quiet-hours-enabled">
-                                Enable quiet hours
-                            </label>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="quiet-start">Start Hour</label>
-                                <input type="number" id="quiet-start" min="0" max="23" value="22">
-                            </div>
-                            <div class="form-group">
-                                <label for="quiet-end">End Hour</label>
-                                <input type="number" id="quiet-end" min="0" max="23" value="7">
-                            </div>
-                        </div>
-
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save"></i> Save Preferences
-                        </button>
-                    </form>
-                </div>
-
-                <div id="preferences-result" class="result-box" style="display: none;"></div>
-            </div>
-
-            <!-- Templates Tab -->
-            <div id="templates" class="tab-content">
-                <h2>Notification Templates</h2>
-                
-                <button id="show-template-form" class="btn btn-secondary mb-3">
-                    <i class="fas fa-plus"></i> Create New Template
+            <nav class="sidebar-nav">
+                <button class="nav-item active" data-tab="dashboard">
+                    <i class="fas fa-chart-line"></i><span>Dashboard</span>
                 </button>
-
-                <div id="template-form-container" style="display: none;">
-                    <form id="template-form" class="form">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="template-id">Template ID *</label>
-                                <input type="text" id="template-id" required placeholder="tpl_example">
-                            </div>
-                            <div class="form-group">
-                                <label for="template-name">Name *</label>
-                                <input type="text" id="template-name" required placeholder="My Template">
-                            </div>
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="template-channel">Channel *</label>
-                                <select id="template-channel" required>
-                                    <option value="">Select channel</option>
-                                    <option value="email">Email</option>
-                                    <option value="sms">SMS</option>
-                                    <option value="push">Push</option>
-                                    <option value="inapp">In-App</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="template-event-type">Event Type *</label>
-                                <input type="text" id="template-event-type" required placeholder="user_signup">
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="template-subject">Subject (Email only)</label>
-                            <input type="text" id="template-subject" placeholder="Welcome {{first_name}}!">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="template-body">Body *</label>
-                            <textarea id="template-body" rows="6" required placeholder="Hi {{first_name}}, welcome to our platform!"></textarea>
-                            <small>Use {{variable_name}} for dynamic content</small>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="template-variables">Variables (comma-separated)</label>
-                            <input type="text" id="template-variables" placeholder="first_name, order_id, amount">
-                        </div>
-
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save"></i> Save Template
-                        </button>
-                        <button type="button" id="cancel-template" class="btn btn-secondary">Cancel</button>
-                    </form>
+                <button class="nav-item" data-tab="send">
+                    <i class="fas fa-paper-plane"></i><span>Send Notification</span>
+                </button>
+                <button class="nav-item" data-tab="quicktest">
+                    <i class="fas fa-bolt"></i><span>Quick Test</span>
+                    <span class="nav-badge">NEW</span>
+                </button>
+                <button class="nav-item" data-tab="preferences">
+                    <i class="fas fa-sliders-h"></i><span>User Preferences</span>
+                </button>
+                <button class="nav-item" data-tab="templates">
+                    <i class="fas fa-layer-group"></i><span>Templates</span>
+                </button>
+                <button class="nav-item" data-tab="status">
+                    <i class="fas fa-radar"></i><span>Check Status</span>
+                </button>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="author-card">
+                    <div class="author-avatar">RS</div>
+                    <div class="author-info">
+                        <span class="author-name">Ritesh Sharma</span>
+                        <span class="author-id">240410700085</span>
+                    </div>
                 </div>
-
-                <div id="templates-list" class="templates-list"></div>
             </div>
+        </aside>
 
-            <!-- Check Status Tab -->
-            <div id="status" class="tab-content">
-                <h2>Check Notification Status</h2>
-                
-                <div class="form-group">
-                    <label for="status-id">Notification ID or Event ID</label>
-                    <div class="input-group">
-                        <input type="text" id="status-id" placeholder="evt_xxxxx or notification ID">
-                        <button id="check-status" class="btn btn-secondary">
-                            <i class="fas fa-search"></i> Check
-                        </button>
+        <!-- Main Content -->
+        <div class="main-wrapper">
+            <!-- Top Bar -->
+            <header class="topbar">
+                <div class="topbar-left">
+                    <h1 class="page-title" id="page-title">Dashboard</h1>
+                    <span class="page-subtitle" id="page-subtitle">System overview &amp; analytics</span>
+                </div>
+                <div class="topbar-right">
+                    <div class="api-status" id="api-status">
+                        <span class="status-dot"></span>
+                        <span>API Connected</span>
+                    </div>
+                    <button class="btn btn-sm btn-outline" onclick="loadDashboardStats()">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+            </header>
+
+            <!-- Tab Contents -->
+            <main class="content-area">
+
+                <!-- ===== DASHBOARD TAB ===== -->
+                <div id="dashboard" class="tab-content active">
+                    <div class="stats-grid">
+                        <div class="stat-card stat-total">
+                            <div class="stat-icon-wrap"><i class="fas fa-bell"></i></div>
+                            <div class="stat-body">
+                                <div class="stat-number" id="total-notifications">—</div>
+                                <div class="stat-label">Total Sent</div>
+                            </div>
+                            <div class="stat-trend"><i class="fas fa-arrow-up"></i></div>
+                        </div>
+                        <div class="stat-card stat-success">
+                            <div class="stat-icon-wrap"><i class="fas fa-check-circle"></i></div>
+                            <div class="stat-body">
+                                <div class="stat-number" id="delivered-count">—</div>
+                                <div class="stat-label">Delivered</div>
+                            </div>
+                        </div>
+                        <div class="stat-card stat-warning">
+                            <div class="stat-icon-wrap"><i class="fas fa-hourglass-half"></i></div>
+                            <div class="stat-body">
+                                <div class="stat-number" id="pending-count">—</div>
+                                <div class="stat-label">Pending</div>
+                            </div>
+                        </div>
+                        <div class="stat-card stat-danger">
+                            <div class="stat-icon-wrap"><i class="fas fa-exclamation-circle"></i></div>
+                            <div class="stat-body">
+                                <div class="stat-number" id="failed-count">—</div>
+                                <div class="stat-label">Failed</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="charts-row">
+                        <div class="chart-card">
+                            <div class="chart-header">
+                                <h3><i class="fas fa-tags"></i> By Event Type</h3>
+                            </div>
+                            <div id="event-type-chart" class="chart-body"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-header">
+                                <h3><i class="fas fa-broadcast-tower"></i> Channel Performance</h3>
+                            </div>
+                            <div id="channel-chart" class="chart-body"></div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Activity -->
+                    <div class="activity-card">
+                        <div class="chart-header">
+                            <h3><i class="fas fa-history"></i> Recent Notifications</h3>
+                            <button class="btn btn-sm btn-ghost" onclick="loadRecentActivity()">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </div>
+                        <div id="recent-activity" class="activity-list">
+                            <div class="empty-state"><i class="fas fa-inbox"></i><p>No recent activity</p></div>
+                        </div>
                     </div>
                 </div>
 
-                <div id="status-result" class="status-result" style="display: none;"></div>
-            </div>
-        </main>
+                <!-- ===== SEND NOTIFICATION TAB ===== -->
+                <div id="send" class="tab-content">
+                    <div class="two-col-layout">
+                        <div class="form-panel">
+                            <div class="panel-header">
+                                <h3><i class="fas fa-paper-plane"></i> Compose Notification</h3>
+                                <button type="button" class="btn btn-sm btn-accent" id="auto-fill-btn" onclick="autoFillForm()">
+                                    <i class="fas fa-magic"></i> Auto-Fill Demo
+                                </button>
+                            </div>
 
-        <!-- Footer -->
-        <footer class="footer">
-            <p>&copy; 2024 Notification Orchestrator | Ritesh Sharma (240410700085) | 4 Sem Project</p>
-        </footer>
+                            <form id="send-notification-form" class="form">
+                                <div class="form-group">
+                                    <label for="user-id">
+                                        <i class="fas fa-user"></i> User ID
+                                        <span class="required">*</span>
+                                    </label>
+                                    <input type="text" id="user-id" required placeholder="e.g., user_123">
+                                    <span class="field-hint">The recipient's unique identifier</span>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="event-type">
+                                            <i class="fas fa-tag"></i> Event Type
+                                            <span class="required">*</span>
+                                        </label>
+                                        <select id="event-type" required>
+                                            <option value="">Select event type</option>
+                                            <option value="user_signup">👤 User Signup</option>
+                                            <option value="order_confirmation">📦 Order Confirmation</option>
+                                            <option value="password_reset">🔑 Password Reset</option>
+                                            <option value="marketing">📣 Marketing</option>
+                                            <option value="security_alert">🔒 Security Alert</option>
+                                            <option value="system_notification">⚙️ System Notification</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="priority">
+                                            <i class="fas fa-flag"></i> Priority
+                                        </label>
+                                        <select id="priority">
+                                            <option value="low">🟢 Low</option>
+                                            <option value="normal" selected>🔵 Normal</option>
+                                            <option value="high">🟠 High</option>
+                                            <option value="urgent">🔴 Urgent</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label><i class="fas fa-broadcast-tower"></i> Channels</label>
+                                    <div class="channel-selector">
+                                        <label class="channel-chip" data-channel="email">
+                                            <input type="checkbox" name="channel" value="email" checked>
+                                            <span class="chip-inner">
+                                                <i class="fas fa-envelope"></i> Email
+                                            </span>
+                                        </label>
+                                        <label class="channel-chip" data-channel="sms">
+                                            <input type="checkbox" name="channel" value="sms">
+                                            <span class="chip-inner">
+                                                <i class="fas fa-sms"></i> SMS
+                                            </span>
+                                        </label>
+                                        <label class="channel-chip" data-channel="push">
+                                            <input type="checkbox" name="channel" value="push">
+                                            <span class="chip-inner">
+                                                <i class="fas fa-mobile-alt"></i> Push
+                                            </span>
+                                        </label>
+                                        <label class="channel-chip" data-channel="inapp">
+                                            <input type="checkbox" name="channel" value="inapp">
+                                            <span class="chip-inner">
+                                                <i class="fas fa-bell"></i> In-App
+                                            </span>
+                                        </label>
+                                    </div>
+                                    <button type="button" class="btn btn-xs btn-ghost" onclick="selectAllChannels()">Select All</button>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="metadata">
+                                        <i class="fas fa-code"></i> Metadata (JSON)
+                                    </label>
+                                    <div class="code-editor-wrap">
+                                        <textarea id="metadata" rows="5" placeholder='{"first_name": "John", "order_id": "12345"}'></textarea>
+                                        <button type="button" class="code-format-btn" onclick="formatJSON()" title="Format JSON">
+                                            <i class="fas fa-align-left"></i>
+                                        </button>
+                                    </div>
+                                    <span class="field-hint">Template variables as JSON — use {{variable}} in templates</span>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="schedule-time">
+                                        <i class="fas fa-clock"></i> Schedule Time
+                                        <span class="optional-tag">Optional</span>
+                                    </label>
+                                    <input type="datetime-local" id="schedule-time">
+                                    <span class="field-hint">Leave empty to send immediately</span>
+                                </div>
+
+                                <div class="form-actions">
+                                    <button type="submit" class="btn btn-primary btn-lg" id="send-btn">
+                                        <i class="fas fa-paper-plane"></i> Send Notification
+                                    </button>
+                                    <button type="button" class="btn btn-ghost" onclick="resetForm()">
+                                        <i class="fas fa-undo"></i> Reset
+                                    </button>
+                                </div>
+                            </form>
+
+                            <div id="send-result" class="result-box" style="display:none;"></div>
+                        </div>
+
+                        <!-- Demo Scenarios Panel -->
+                        <div class="scenarios-panel">
+                            <div class="panel-header">
+                                <h3><i class="fas fa-flask"></i> Demo Scenarios</h3>
+                                <span class="panel-hint">Click to auto-fill</span>
+                            </div>
+                            <div class="scenario-list" id="scenario-list"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== QUICK TEST TAB ===== -->
+                <div id="quicktest" class="tab-content">
+                    <div class="quicktest-intro">
+                        <div class="intro-icon"><i class="fas fa-bolt"></i></div>
+                        <div>
+                            <h3>Quick Test Suite</h3>
+                            <p>Fire pre-configured notifications across all channels with one click. Perfect for testing your setup.</p>
+                        </div>
+                    </div>
+
+                    <div class="quicktest-grid" id="quicktest-grid"></div>
+
+                    <div class="bulk-actions">
+                        <h3><i class="fas fa-layer-group"></i> Bulk Actions</h3>
+                        <div class="bulk-btns">
+                            <button class="btn btn-primary" onclick="sendAllNotifications()">
+                                <i class="fas fa-rocket"></i> Send All Test Notifications
+                            </button>
+                            <button class="btn btn-outline" onclick="sendAllChannels()">
+                                <i class="fas fa-broadcast-tower"></i> Test All Channels
+                            </button>
+                            <button class="btn btn-outline" onclick="sendAllPriorities()">
+                                <i class="fas fa-flag"></i> Test All Priorities
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="quicktest-log" class="test-log" style="display:none;">
+                        <div class="log-header">
+                            <h4><i class="fas fa-terminal"></i> Test Log</h4>
+                            <button class="btn btn-xs btn-ghost" onclick="clearLog()">Clear</button>
+                        </div>
+                        <div id="log-entries" class="log-entries"></div>
+                    </div>
+                </div>
+
+                <!-- ===== PREFERENCES TAB ===== -->
+                <div id="preferences" class="tab-content">
+                    <div class="search-bar-row">
+                        <div class="search-input-wrap">
+                            <i class="fas fa-user search-icon"></i>
+                            <input type="text" id="pref-user-id" placeholder="Enter User ID (e.g., user_123)">
+                        </div>
+                        <button id="load-preferences" class="btn btn-primary">
+                            <i class="fas fa-search"></i> Load Preferences
+                        </button>
+                        <button class="btn btn-outline" onclick="document.getElementById('pref-user-id').value='user_demo'; document.getElementById('load-preferences').click()">
+                            <i class="fas fa-magic"></i> Load Demo User
+                        </button>
+                    </div>
+
+                    <div id="preferences-form-container" style="display:none;">
+                        <form id="preferences-form" class="form">
+                            <div class="pref-section">
+                                <h3><i class="fas fa-address-card"></i> Contact Information</h3>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="pref-email"><i class="fas fa-envelope"></i> Email</label>
+                                        <input type="email" id="pref-email" placeholder="user@example.com">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="pref-phone"><i class="fas fa-phone"></i> Phone</label>
+                                        <input type="tel" id="pref-phone" placeholder="+1234567890">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="pref-section">
+                                <h3><i class="fas fa-toggle-on"></i> Channel Preferences</h3>
+                                <p class="section-hint">Control which channels are enabled per notification category</p>
+                                <div id="preferences-grid" class="preferences-matrix"></div>
+                            </div>
+
+                            <div class="pref-section">
+                                <h3><i class="fas fa-moon"></i> Quiet Hours</h3>
+                                <div class="quiet-hours-row">
+                                    <label class="toggle-label">
+                                        <input type="checkbox" id="quiet-hours-enabled" class="toggle-input">
+                                        <span class="toggle-switch"></span>
+                                        Enable quiet hours
+                                    </label>
+                                    <div class="form-row quiet-time-row">
+                                        <div class="form-group">
+                                            <label for="quiet-start">Start Hour (0–23)</label>
+                                            <input type="number" id="quiet-start" min="0" max="23" value="22">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="quiet-end">End Hour (0–23)</label>
+                                            <input type="number" id="quiet-end" min="0" max="23" value="7">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="pref-section">
+                                <h3><i class="fas fa-ban"></i> Global Settings</h3>
+                                <label class="toggle-label danger-toggle">
+                                    <input type="checkbox" id="global-opt-out" class="toggle-input">
+                                    <span class="toggle-switch"></span>
+                                    Opt out of ALL notifications
+                                </label>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-save"></i> Save Preferences
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div id="preferences-result" class="result-box" style="display:none;"></div>
+                </div>
+
+                <!-- ===== TEMPLATES TAB ===== -->
+                <div id="templates" class="tab-content">
+                    <div class="templates-toolbar">
+                        <div class="toolbar-left">
+                            <span id="template-count" class="template-count-badge">0 templates</span>
+                        </div>
+                        <button id="show-template-form" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> New Template
+                        </button>
+                    </div>
+
+                    <div id="template-form-container" class="template-form-panel" style="display:none;">
+                        <div class="panel-header">
+                            <h3><i class="fas fa-edit"></i> Create Template</h3>
+                            <button type="button" id="cancel-template" class="btn btn-ghost btn-sm">
+                                <i class="fas fa-times"></i> Cancel
+                            </button>
+                        </div>
+                        <form id="template-form" class="form">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="template-id">Template ID <span class="required">*</span></label>
+                                    <input type="text" id="template-id" required placeholder="tpl_my_template">
+                                </div>
+                                <div class="form-group">
+                                    <label for="template-name">Name <span class="required">*</span></label>
+                                    <input type="text" id="template-name" required placeholder="My Template">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="template-channel">Channel <span class="required">*</span></label>
+                                    <select id="template-channel" required>
+                                        <option value="">Select channel</option>
+                                        <option value="email">📧 Email</option>
+                                        <option value="sms">💬 SMS</option>
+                                        <option value="push">📱 Push</option>
+                                        <option value="inapp">🔔 In-App</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="template-event-type">Event Type <span class="required">*</span></label>
+                                    <input type="text" id="template-event-type" required placeholder="user_signup">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="template-subject">Subject <span class="optional-tag">Email only</span></label>
+                                <input type="text" id="template-subject" placeholder="Welcome {{first_name}}!">
+                            </div>
+                            <div class="form-group">
+                                <label for="template-body">Body <span class="required">*</span></label>
+                                <textarea id="template-body" rows="6" required placeholder="Hi {{first_name}}, welcome!"></textarea>
+                                <span class="field-hint">Use <code>{{variable_name}}</code> for dynamic content</span>
+                            </div>
+                            <div class="form-group">
+                                <label for="template-variables">Variables <span class="optional-tag">comma-separated</span></label>
+                                <input type="text" id="template-variables" placeholder="first_name, order_id, amount">
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Save Template
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div id="templates-list" class="templates-grid"></div>
+                </div>
+
+                <!-- ===== STATUS TAB ===== -->
+                <div id="status" class="tab-content">
+                    <div class="status-search-panel">
+                        <div class="status-search-icon"><i class="fas fa-radar"></i></div>
+                        <h3>Track Notification</h3>
+                        <p>Enter an Event ID or Notification ID to see real-time delivery status</p>
+                        <div class="status-search-row">
+                            <input type="text" id="status-id" placeholder="evt_xxxxxxxx or notification ID" class="status-input">
+                            <button id="check-status" class="btn btn-primary btn-lg">
+                                <i class="fas fa-search"></i> Track
+                            </button>
+                        </div>
+                        <div class="status-hints">
+                            <span class="hint-tag" onclick="pasteLastEventId()">
+                                <i class="fas fa-history"></i> Use Last Event ID
+                            </span>
+                        </div>
+                    </div>
+
+                    <div id="status-result" class="status-result" style="display:none;"></div>
+                </div>
+
+            </main>
+        </div>
     </div>
+
+    <!-- Toast Notification -->
+    <div id="toast-container" class="toast-container"></div>
 
     <script src="/js/app.js"></script>
 </body>
