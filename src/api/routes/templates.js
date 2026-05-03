@@ -1,6 +1,6 @@
 const express = require('express');
 const Joi = require('joi');
-const templateService = require('../../services/template.service.mongo');
+const templateService = require('../../services/template.service');
 const Template = require('../../models/Template');
 const logger = require('../../config/logger');
 

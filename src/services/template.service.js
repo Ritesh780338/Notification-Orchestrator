@@ -1,29 +1,22 @@
-const pool = require('../config/database');
+const Template = require('../models/Template');
 const logger = require('../config/logger');
 
 class TemplateService {
-  /**
-   * Get template by event type and channel
-   */
   async getTemplate(eventType, channel) {
     try {
-      const result = await pool.query(
-        `SELECT * FROM templates 
-         WHERE event_type = $1 AND channel = $2 AND active = true 
-         ORDER BY version DESC LIMIT 1`,
-        [eventType, channel]
-      );
+      const template = await Template.findOne({
+        event_type: eventType,
+        channel: channel,
+        active: true
+      }).sort({ version: -1 });
       
-      return result.rows[0] || null;
+      return template;
     } catch (error) {
       logger.error('Error fetching template:', error);
       throw error;
     }
   }
 
-  /**
-   * Render template with variables
-   */
   renderTemplate(template, variables) {
     if (!template) {
       throw new Error('Template not found');
@@ -60,29 +53,44 @@ class TemplateService {
     return rendered;
   }
 
-  /**
-   * Create or update template
-   */
   async saveTemplate(templateData) {
     try {
-      const { template_id, channel, event_type, subject, body } = templateData;
+      const { template_id, name, channel, event_type, subject, body, variables } = templateData;
       
-      const result = await pool.query(
-        `INSERT INTO templates (template_id, channel, event_type, subject, body, version)
-         VALUES ($1, $2, $3, $4, $5, 1)
-         ON CONFLICT (template_id) 
-         DO UPDATE SET 
-           subject = EXCLUDED.subject,
-           body = EXCLUDED.body,
-           version = templates.version + 1,
-           updated_at = CURRENT_TIMESTAMP
-         RETURNING *`,
-        [template_id, channel, event_type, subject, body]
-      );
+      const existing = await Template.findOne({ template_id });
       
-      return result.rows[0];
+      if (existing) {
+        existing.name = name || existing.name;
+        existing.subject = subject;
+        existing.body = body;
+        existing.variables = variables || existing.variables;
+        existing.version += 1;
+        await existing.save();
+        return existing;
+      } else {
+        const template = await Template.create({
+          template_id,
+          name,
+          channel,
+          event_type,
+          subject,
+          body,
+          variables: variables || [],
+          version: 1
+        });
+        return template;
+      }
     } catch (error) {
       logger.error('Error saving template:', error);
+      throw error;
+    }
+  }
+
+  async getAllTemplates() {
+    try {
+      return await Template.find({ active: true }).sort({ event_type: 1, channel: 1 });
+    } catch (error) {
+      logger.error('Error fetching templates:', error);
       throw error;
     }
   }

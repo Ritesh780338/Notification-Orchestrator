@@ -1,21 +1,41 @@
 const express = require('express');
-const router = express.Router();
-const { eventSchema } = require('../../utils/validation');
+const Joi = require('joi');
 const ingestionService = require('../../services/ingestion.service');
 const logger = require('../../config/logger');
 
+const router = express.Router();
+
+// Validation schema
+const eventSchema = Joi.object({
+  event_type: Joi.string().valid(
+    'user_signup',
+    'order_confirmation',
+    'password_reset',
+    'marketing',
+    'security_alert',
+    'system_notification'
+  ).required(),
+  user_id: Joi.string().required(),
+  priority: Joi.string().valid('low', 'normal', 'high', 'urgent').default('normal'),
+  metadata: Joi.object().default({}),
+  preferred_channels: Joi.array().items(
+    Joi.string().valid('email', 'sms', 'push', 'inapp')
+  ).optional(),
+  schedule_time: Joi.date().iso().optional()
+});
+
 /**
- * POST /notifications/events
- * Ingest notification event
+ * POST /api/notifications/events
+ * Ingest a new notification event
  */
-router.post('/', async (req, res) => {
+router.post('/', async (req, res, next) => {
   try {
     // Validate request body
     const { error, value } = eventSchema.validate(req.body);
     
     if (error) {
       return res.status(400).json({
-        error: 'Validation failed',
+        error: 'Validation error',
         details: error.details.map(d => d.message)
       });
     }
@@ -23,22 +43,16 @@ router.post('/', async (req, res) => {
     // Ingest event
     const result = await ingestionService.ingestEvent(value);
 
+    logger.info('Event accepted', { event_id: result.event_id });
+
     res.status(202).json({
-      message: 'Event accepted',
+      message: 'Event accepted for processing',
       ...result
     });
 
   } catch (error) {
-    logger.error('Event ingestion failed:', error);
-    
-    if (error.message === 'User not found') {
-      return res.status(404).json({ error: error.message });
-    }
-    
-    res.status(500).json({
-      error: 'Internal server error',
-      message: error.message
-    });
+    logger.error('Error ingesting event:', error);
+    next(error);
   }
 });
 

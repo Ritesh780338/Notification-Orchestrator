@@ -1,104 +1,152 @@
-const pool = require('../config/database');
+const UserPreference = require('../models/UserPreference');
 const logger = require('../config/logger');
 
 class PreferenceService {
-  /**
-   * Get user preferences
-   */
   async getUserPreferences(userId) {
     try {
-      const result = await pool.query(
-        'SELECT channel, category, enabled FROM user_preferences WHERE user_id = $1',
-        [userId]
-      );
+      let userPref = await UserPreference.findOne({ user_id: userId });
       
-      return result.rows;
+      if (!userPref) {
+        // Create default preferences
+        userPref = await UserPreference.create({
+          user_id: userId,
+          preferences: this.getDefaultPreferences()
+        });
+      }
+      
+      return {
+        user_id: userPref.user_id,
+        email: userPref.email,
+        phone: userPref.phone,
+        push_token: userPref.push_token,
+        preferences: userPref.preferences,
+        global_opt_out: userPref.global_opt_out,
+        quiet_hours: userPref.quiet_hours
+      };
     } catch (error) {
       logger.error('Error fetching user preferences:', error);
       throw error;
     }
   }
 
-  /**
-   * Update user preferences
-   */
-  async updateUserPreferences(userId, preferences) {
-    const client = await pool.connect();
-    
+  async updateUserPreferences(userId, updateData) {
     try {
-      await client.query('BEGIN');
+      let userPref = await UserPreference.findOne({ user_id: userId });
       
-      for (const pref of preferences) {
-        await client.query(
-          `INSERT INTO user_preferences (user_id, channel, category, enabled)
-           VALUES ($1, $2, $3, $4)
-           ON CONFLICT (user_id, channel, category)
-           DO UPDATE SET enabled = EXCLUDED.enabled, updated_at = CURRENT_TIMESTAMP`,
-          [userId, pref.channel, pref.category, pref.enabled]
-        );
+      if (!userPref) {
+        userPref = new UserPreference({
+          user_id: userId,
+          preferences: this.getDefaultPreferences()
+        });
       }
+
+      // Update contact info if provided
+      if (updateData.email) userPref.email = updateData.email;
+      if (updateData.phone) userPref.phone = updateData.phone;
+      if (updateData.push_token) userPref.push_token = updateData.push_token;
       
-      await client.query('COMMIT');
+      // Update preferences
+      if (updateData.preferences && Array.isArray(updateData.preferences)) {
+        for (const pref of updateData.preferences) {
+          const existing = userPref.preferences.find(
+            p => p.channel === pref.channel && p.category === pref.category
+          );
+          
+          if (existing) {
+            existing.enabled = pref.enabled;
+          } else {
+            userPref.preferences.push(pref);
+          }
+        }
+      }
+
+      // Update global opt-out
+      if (typeof updateData.global_opt_out === 'boolean') {
+        userPref.global_opt_out = updateData.global_opt_out;
+      }
+
+      // Update quiet hours
+      if (updateData.quiet_hours) {
+        userPref.quiet_hours = {
+          ...userPref.quiet_hours,
+          ...updateData.quiet_hours
+        };
+      }
+
+      await userPref.save();
       
-      return await this.getUserPreferences(userId);
+      return this.getUserPreferences(userId);
     } catch (error) {
-      await client.query('ROLLBACK');
       logger.error('Error updating user preferences:', error);
       throw error;
-    } finally {
-      client.release();
     }
   }
 
-  /**
-   * Check if user allows notifications for channel and category
-   */
   async isChannelAllowed(userId, channel, category) {
     try {
-      // Check suppression list first
-      const suppressionResult = await pool.query(
-        'SELECT id FROM suppression_list WHERE user_id = $1 AND channel = $2',
-        [userId, channel]
-      );
+      const userPref = await UserPreference.findOne({ user_id: userId });
       
-      if (suppressionResult.rows.length > 0) {
-        return false; // Hard suppression
+      if (!userPref) {
+        return true; // Allow by default if no preferences set
       }
 
-      // Check user preferences
-      const prefResult = await pool.query(
-        'SELECT enabled FROM user_preferences WHERE user_id = $1 AND channel = $2 AND category = $3',
-        [userId, channel, category]
+      // Check global opt-out
+      if (userPref.global_opt_out) {
+        return false;
+      }
+
+      // Check suppression
+      if (userPref.suppressed) {
+        return false;
+      }
+
+      // Check specific preference
+      const pref = userPref.preferences.find(
+        p => p.channel === channel && p.category === category
       );
       
-      if (prefResult.rows.length === 0) {
-        return true; // No preference set, allow by default
+      if (!pref) {
+        return true; // Allow by default if preference not set
       }
       
-      return prefResult.rows[0].enabled;
+      return pref.enabled;
     } catch (error) {
       logger.error('Error checking channel permission:', error);
       throw error;
     }
   }
 
-  /**
-   * Add user to suppression list
-   */
-  async suppressUser(userId, channel, reason = null) {
+  async suppressUser(userId, reason = null) {
     try {
-      await pool.query(
-        `INSERT INTO suppression_list (user_id, channel, reason)
-         VALUES ($1, $2, $3)
-         ON CONFLICT (user_id, channel) DO NOTHING`,
-        [userId, channel, reason]
+      await UserPreference.findOneAndUpdate(
+        { user_id: userId },
+        { suppressed: true },
+        { upsert: true }
       );
       
-      logger.info('User added to suppression list', { userId, channel });
+      logger.info('User suppressed', { userId, reason });
     } catch (error) {
-      logger.error('Error adding to suppression list:', error);
+      logger.error('Error suppressing user:', error);
       throw error;
     }
+  }
+
+  getDefaultPreferences() {
+    const channels = ['email', 'sms', 'push', 'inapp'];
+    const categories = ['marketing', 'transactional', 'security', 'system'];
+    const preferences = [];
+
+    for (const channel of channels) {
+      for (const category of categories) {
+        preferences.push({
+          channel,
+          category,
+          enabled: category !== 'marketing'
+        });
+      }
+    }
+
+    return preferences;
   }
 }
 

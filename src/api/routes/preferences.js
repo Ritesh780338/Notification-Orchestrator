@@ -1,68 +1,79 @@
 const express = require('express');
-const router = express.Router();
-const { preferencesUpdateSchema } = require('../../utils/validation');
+const Joi = require('joi');
 const preferenceService = require('../../services/preference.service');
 const logger = require('../../config/logger');
 
+const router = express.Router();
+
+// Validation schema
+const preferenceUpdateSchema = Joi.object({
+  email: Joi.string().email().optional(),
+  phone: Joi.string().optional(),
+  push_token: Joi.string().optional(),
+  preferences: Joi.array().items(
+    Joi.object({
+      channel: Joi.string().valid('email', 'sms', 'push', 'inapp').required(),
+      category: Joi.string().valid('marketing', 'transactional', 'security', 'system').required(),
+      enabled: Joi.boolean().required()
+    })
+  ).optional(),
+  global_opt_out: Joi.boolean().optional(),
+  quiet_hours: Joi.object({
+    enabled: Joi.boolean(),
+    start_hour: Joi.number().min(0).max(23),
+    end_hour: Joi.number().min(0).max(23),
+    timezone: Joi.string()
+  }).optional()
+});
+
 /**
- * GET /users/:userId/preferences
+ * GET /api/users/:userId/preferences
  * Get user notification preferences
  */
-router.get('/:userId', async (req, res) => {
+router.get('/:userId/preferences', async (req, res, next) => {
   try {
     const { userId } = req.params;
-
+    
     const preferences = await preferenceService.getUserPreferences(userId);
-
-    res.json({
-      user_id: userId,
-      preferences
-    });
+    
+    res.json(preferences);
 
   } catch (error) {
     logger.error('Error fetching preferences:', error);
-    res.status(500).json({
-      error: 'Internal server error',
-      message: error.message
-    });
+    next(error);
   }
 });
 
 /**
- * PUT /users/:userId/preferences
+ * PUT /api/users/:userId/preferences
  * Update user notification preferences
  */
-router.put('/:userId', async (req, res) => {
+router.put('/:userId/preferences', async (req, res, next) => {
   try {
     const { userId } = req.params;
-
+    
     // Validate request body
-    const { error, value } = preferencesUpdateSchema.validate(req.body);
+    const { error, value } = preferenceUpdateSchema.validate(req.body);
     
     if (error) {
       return res.status(400).json({
-        error: 'Validation failed',
+        error: 'Validation error',
         details: error.details.map(d => d.message)
       });
     }
 
-    const preferences = await preferenceService.updateUserPreferences(
-      userId,
-      value.preferences
-    );
-
+    const updated = await preferenceService.updateUserPreferences(userId, value);
+    
+    logger.info('Preferences updated', { userId });
+    
     res.json({
       message: 'Preferences updated successfully',
-      user_id: userId,
-      preferences
+      preferences: updated
     });
 
   } catch (error) {
     logger.error('Error updating preferences:', error);
-    res.status(500).json({
-      error: 'Internal server error',
-      message: error.message
-    });
+    next(error);
   }
 });
 

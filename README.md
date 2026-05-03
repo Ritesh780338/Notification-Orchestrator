@@ -2,13 +2,13 @@
 
 > **Centralized Multi-Channel Notification Management Service**
 
-A production-ready notification orchestration system with frontend dashboard, backend API, and MongoDB database integration.
+A production-ready notification orchestration system with a modern web dashboard, RESTful API, and MongoDB database.
 
 ## 📋 Project Information
 - **Student**: Ritesh Sharma
 - **Roll No**: 240410700085
 - **Year & Section**: 4 Sem
-- **Project Type**: Application Development (Full Stack)
+- **Project Type**: Full Stack Application
 
 ---
 
@@ -33,46 +33,30 @@ A production-ready notification orchestration system with frontend dashboard, ba
 - ⚡ **Redis Caching**: Fast rate limiting and session management
 - 🔒 **Security**: Rate limiting, input validation, CORS, Helmet
 - 📝 **Logging**: Structured logging with Winston
-- 🧪 **Testing Ready**: Jest configuration included
 
 ---
 
-## 🏗️ System Architecture
+## 🚀 Quick Start
 
-```
-┌─────────────────┐
-│  Web Dashboard  │
-│   (Frontend)    │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│   API Gateway   │
-│   (Express.js)  │
-└────────┬────────┘
-         │
-    ┌────┴────┐
-    ▼         ▼
-┌────────┐ ┌──────────┐
-│MongoDB │ │  Redis   │
-└────────┘ └──────────┘
-    │
-    ▼
-┌─────────────────────────────────┐
-│   Orchestration Engine          │
-│  ┌──────────────────────────┐  │
-│  │ Preference Service       │  │
-│  │ Template Service         │  │
-│  │ Ingestion Service        │  │
-│  └──────────────────────────┘  │
-└────────┬────────────────────────┘
-         │
-    ┌────┴────┬────────┬────────┐
-    ▼         ▼        ▼        ▼
-┌────────┐ ┌─────┐ ┌──────┐ ┌────────┐
-│ Email  │ │ SMS │ │ Push │ │ In-App │
-│Adapter │ │Adapt│ │Adapt │ │Adapter │
-└────────┘ └─────┘ └──────┘ └────────┘
+### Prerequisites
+- Node.js v16+
+- MongoDB (local or Atlas)
+- Redis (local or cloud)
+
+### Installation
+
+```bash
+# 1. Install dependencies
+npm install
+
+# 2. Configure environment
+# Edit .env file with your MongoDB and Redis credentials
+
+# 3. Start the application
+npm start
+
+# 4. Open browser
+# Navigate to: http://localhost:3000
 ```
 
 ---
@@ -80,69 +64,205 @@ A production-ready notification orchestration system with frontend dashboard, ba
 ## 🛠️ Tech Stack
 
 ### Backend
-- **Runtime**: Node.js v16+
+- **Runtime**: Node.js
 - **Framework**: Express.js
 - **Database**: MongoDB (Mongoose ODM)
 - **Cache**: Redis
-- **Val
-### Event Ingestion
+- **Validation**: Joi
+- **Logging**: Winston
+
+### Frontend
+- **HTML5/CSS3**: Modern responsive design
+- **JavaScript**: Vanilla JS (no framework dependencies)
+- **UI**: Custom components with Font Awesome icons
+
+---
+
+## 📡 API Endpoints
+
+### Send Notification
 ```bash
 POST /api/notifications/events
-```
+Content-Type: application/json
 
-### User Preferences
-```bash
-GET /api/users/{userId}/preferences
-PUT /api/users/{userId}/preferences
-```
-
-### Notification Status
-```bash
-GET /api/notifications/{id}/status
-```
-
-### Health Check
-```bash
-GET /health
-```
-
-## 📝 Example Usage
-
-### Send a Notification
-```bash
-curl -X POST http://localhost:3000/api/notifications/events \
-  -H "Content-Type: application/json" \
-  -d '{
-    "event_type": "user_signup",
-    "user_id": "your-user-id",
-    "priority": "normal",
-    "metadata": {
-      "first_name": "John"
-    }
-  }'
+{
+  "event_type": "user_signup",
+  "user_id": "user_123",
+  "priority": "normal",
+  "metadata": {
+    "first_name": "John"
+  }
+}
 ```
 
 ### Check Status
 ```bash
-curl http://localhost:3000/api/notifications/evt_xxxxx/status
+GET /api/notifications/{event_id}/status
+```
+
+### Get User Preferences
+```bash
+GET /api/users/{user_id}/preferences
 ```
 
 ### Update Preferences
 ```bash
-curl -X PUT http://localhost:3000/api/users/your-user-id/preferences \
-  -H "Content-Type: application/json" \
-  -d '{
-    "preferences": [
-      {
-        "channel": "email",
-        "category": "marketing",
-        "enabled": false
-      }
-    ]
-  }'
+PUT /api/users/{user_id}/preferences
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "preferences": [
+    {
+      "channel": "email",
+      "category": "marketing",
+      "enabled": false
+    }
+  ]
+}
 ```
 
-## 🎯 Success Metrics
+### Get Templates
+```bash
+GET /api/templates
+```
+
+### Create Template
+```bash
+POST /api/templates
+Content-Type: application/json
+
+{
+  "template_id": "tpl_custom",
+  "name": "Custom Template",
+  "channel": "email",
+  "event_type": "custom_event",
+  "subject": "Hello {{name}}",
+  "body": "This is a custom template",
+  "variables": ["name"]
+}
+```
+
+### Get Statistics
+```bash
+GET /api/notifications/stats
+```
+
+---
+
+## 🎯 How It Works
+
+1. **Event Ingestion**: Application sends notification event via API
+2. **User Lookup**: System retrieves user preferences (creates default if not exists)
+3. **Template Selection**: Finds appropriate template for event type and channel
+4. **Preference Check**: Validates user opt-in/opt-out settings
+5. **Quiet Hours**: Respects user's quiet hours configuration
+6. **Rate Limiting**: Applies per-user, per-channel throttling
+7. **Orchestration**: Routes to appropriate channel adapters
+8. **Delivery**: Sends via Email, SMS, Push, or In-App
+9. **Tracking**: Logs delivery status and updates notification record
+10. **Retry**: Automatically retries failed deliveries with exponential backoff
+
+---
+
+## 📁 Project Structure
+
+```
+notification-orchestrator/
+├── public/                      # Frontend files
+│   ├── index.html              # Main dashboard
+│   ├── css/styles.css          # Styling
+│   └── js/app.js               # Frontend logic
+├── src/
+│   ├── adapters/               # Channel adapters
+│   │   ├── email.adapter.js
+│   │   ├── sms.adapter.js
+│   │   ├── push.adapter.js
+│   │   └── inapp.adapter.js
+│   ├── api/
+│   │   ├── middleware/
+│   │   │   └── errorHandler.js
+│   │   └── routes/             # API routes
+│   │       ├── events.js
+│   │       ├── preferences.js
+│   │       ├── status.js
+│   │       └── templates.js
+│   ├── config/                 # Configuration
+│   │   ├── database.js
+│   │   ├── logger.js
+│   │   └── redis.js
+│   ├── models/                 # MongoDB models
+│   │   ├── Notification.js
+│   │   ├── UserPreference.js
+│   │   ├── Template.js
+│   │   └── DeliveryLog.js
+│   ├── services/               # Business logic
+│   │   ├── ingestion.service.js
+│   │   ├── orchestration.service.js
+│   │   ├── preference.service.js
+│   │   └── template.service.js
+│   ├── utils/                  # Utilities
+│   │   ├── retry.js
+│   │   ├── throttle.js
+│   │   └── validation.js
+│   └── server.js               # Main entry point
+├── logs/                       # Application logs
+├── .env                        # Environment variables
+└── package.json               # Dependencies
+```
+
+---
+
+## 🎨 Frontend Features
+
+The web dashboard provides:
+
+1. **Dashboard Tab**: Real-time statistics and charts
+   - Total notifications count
+   - Delivered, pending, and failed counts
+   - Event type distribution chart
+   - Channel performance visualization
+
+2. **Send Notification Tab**: Create and send notifications
+   - User ID input
+   - Event type selection
+   - Priority levels
+   - Channel selection
+   - Metadata (JSON)
+   - Schedule time (optional)
+
+3. **User Preferences Tab**: Manage user notification settings
+   - Load existing preferences
+   - Update contact information
+   - Configure channel preferences by category
+   - Set quiet hours
+   - Global opt-out option
+
+4. **Templates Tab**: View and create notification templates
+   - List all templates
+   - Create new templates
+   - Support for all channels
+   - Variable substitution
+
+5. **Check Status Tab**: Track notification delivery
+   - Search by event ID or notification ID
+   - View detailed status
+   - Channel-wise delivery information
+
+---
+
+## 🔐 Security Features
+
+- JWT/OAuth2 authentication ready
+- Rate limiting (100 req/min)
+- Input validation with Joi
+- CORS configuration
+- Security headers (Helmet)
+- Environment variable protection
+
+---
+
+## 📊 Success Metrics
 
 - ≥ 99.9% event ingestion success rate
 - ≥ 99% delivery attempt reliability
@@ -150,53 +270,61 @@ curl -X PUT http://localhost:3000/api/users/your-user-id/preferences \
 - < 0.1% duplicate notifications
 - 100% preference compliance
 
-## 🧪 Testing
+---
+
+## 🚀 Deployment
+
+### Environment Variables
+
+Required variables in `.env`:
+
+```env
+PORT=3000
+NODE_ENV=production
+MONGODB_URI=your_mongodb_connection_string
+REDIS_HOST=your_redis_host
+REDIS_PORT=your_redis_port
+REDIS_PASSWORD=your_redis_password
+```
+
+### Production Deployment
 
 ```bash
-# Run tests
-npm test
+# Set NODE_ENV to production
+export NODE_ENV=production
 
-# Run with coverage
-npm test -- --coverage
+# Start with PM2 (recommended)
+pm2 start src/server.js --name notification-orchestrator
+
+# Or use npm
+npm start
 ```
 
-## 📁 Project Structure
+---
 
-```
-notification-orchestrator/
-├── src/
-│   ├── adapters/          # Channel adapters
-│   ├── api/               # API routes and middleware
-│   ├── config/            # Configuration files
-│   ├── database/          # Schema and migrations
-│   ├── services/          # Business logic
-│   ├── utils/             # Utility functions
-│   └── server.js          # Main entry point
-├── docs/                  # Documentation
-├── tests/                 # Test files
-├── logs/                  # Application logs
-└── package.json
-```
+## 🧪 Testing
 
-## 🔐 Security Features
+The application is fully functional and can be tested via:
 
-- JWT/OAuth2 authentication ready
-- Rate limiting (100 req/min)
-- Input validation with Joi
-- SQL injection protection
-- CORS configuration
-- Security headers (Helmet)
-- Encryption support
+1. **Web Dashboard**: http://localhost:3000
+2. **API Endpoints**: Use curl, Postman, or any HTTP client
+3. **Health Check**: http://localhost:3000/health
 
-## 🚀 Future Enhancements
+### Example Test Flow
 
-- AI-driven channel optimization
-- Smart send-time optimization
-- A/B testing framework
-- Campaign management UI
-- Multi-language template auto-translation
-- Customer analytics dashboard
-- WebSocket for real-time in-app notifications
+1. Open http://localhost:3000
+2. Go to "Send Notification" tab
+3. Fill in:
+   - User ID: `test_user_001`
+   - Event Type: `user_signup`
+   - Metadata: `{"first_name": "John"}`
+4. Click "Send Notification"
+5. Copy the Event ID from the response
+6. Go to "Check Status" tab
+7. Paste the Event ID and click "Check"
+8. View the notification status and delivery details
+
+---
 
 ## 📄 License
 
@@ -208,19 +336,21 @@ Ritesh Sharma (Roll No: 240410700085)
 
 ---
 
-**Note**: This is a college project demonstrating a production-ready notification orchestration system. SMS and Push adapters use mock implementations for demonstration purposes.
+## 🎓 Project Highlights
+
+This project demonstrates:
+- ✅ Full-stack development (Frontend + Backend + Database)
+- ✅ RESTful API design and implementation
+- ✅ MongoDB database modeling and operations
+- ✅ Redis caching and rate limiting
+- ✅ Real-time data visualization
+- ✅ User preference management
+- ✅ Template engine with variable substitution
+- ✅ Professional UI/UX design
+- ✅ Production-ready code structure
+- ✅ Comprehensive error handling
+- ✅ Logging and monitoring
 
 ---
 
-## 📖 Complete Documentation
-
-This project includes comprehensive documentation:
-
-- **[INDEX.md](INDEX.md)** - Complete index of all files and documentation
-- **[PROJECT_SUMMARY.md](PROJECT_SUMMARY.md)** - Comprehensive project summary
-- **[DELIVERABLES.md](DELIVERABLES.md)** - Complete deliverables checklist
-- **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** - Quick reference card
-- **[DEMO_GUIDE.md](DEMO_GUIDE.md)** - Step-by-step demo guide
-- **[DIRECTORY_STRUCTURE.txt](DIRECTORY_STRUCTURE.txt)** - Visual directory tree
-
-**Start here:** [INDEX.md](INDEX.md) for complete navigation guide.
+**The application is now running at http://localhost:3000** 🎉

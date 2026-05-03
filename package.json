@@ -4,12 +4,9 @@
   "description": "Centralized Multi-Channel Notification Management Service",
   "main": "src/server.js",
   "scripts": {
-    "start": "node src/server-mongo.js",
-    "dev": "nodemon src/server-mongo.js",
-    "start:postgres": "node src/server.js",
-    "dev:postgres": "nodemon src/server.js",
-    "test": "jest --coverage",
-    "seed": "node src/database/seed.js"
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "test": "jest --coverage"
   },
   "keywords": ["notification", "orchestrator", "multi-channel"],
   "author": "Ritesh Sharma (240410700085)",

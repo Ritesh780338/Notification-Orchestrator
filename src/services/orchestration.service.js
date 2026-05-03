@@ -1,4 +1,6 @@
-const pool = require('../config/database');
+const Notification = require('../models/Notification');
+const UserPreference = require('../models/UserPreference');
+const DeliveryLog = require('../models/DeliveryLog');
 const logger = require('../config/logger');
 const templateService = require('./template.service');
 const preferenceService = require('./preference.service');
@@ -15,17 +17,13 @@ class OrchestrationService {
       email: emailAdapter,
       sms: smsAdapter,
       push: pushAdapter,
-      in_app: inappAdapter
+      inapp: inappAdapter
     };
   }
 
-  /**
-   * Process notification event
-   */
   async processNotification(notificationId) {
     try {
-      // Fetch notification details
-      const notification = await this.getNotification(notificationId);
+      const notification = await Notification.findById(notificationId);
       
       if (!notification) {
         throw new Error('Notification not found');
@@ -34,19 +32,22 @@ class OrchestrationService {
       // Check if scheduled for future
       if (notification.schedule_time && new Date(notification.schedule_time) > new Date()) {
         logger.info('Notification scheduled for future', { notificationId });
-        await this.updateNotificationStatus(notificationId, 'scheduled');
+        notification.status = 'scheduled';
+        await notification.save();
         return;
       }
 
-      // Update status to queued
-      await this.updateNotificationStatus(notificationId, 'queued');
+      // Update status to processing
+      notification.status = 'processing';
+      await notification.save();
 
       // Determine channels
       const channels = await this.determineChannels(notification);
 
       if (channels.length === 0) {
         logger.warn('No channels available for notification', { notificationId });
-        await this.updateNotificationStatus(notificationId, 'suppressed');
+        notification.status = 'suppressed';
+        await notification.save();
         return;
       }
 
@@ -60,12 +61,15 @@ class OrchestrationService {
       const anySucceeded = results.some(r => r.status === 'fulfilled' && r.value);
       
       if (allSucceeded) {
-        await this.updateNotificationStatus(notificationId, 'delivered');
+        notification.status = 'delivered';
       } else if (anySucceeded) {
-        await this.updateNotificationStatus(notificationId, 'sent');
+        notification.status = 'sent';
       } else {
-        await this.updateNotificationStatus(notificationId, 'failed');
+        notification.status = 'failed';
       }
+
+      notification.processed_at = new Date();
+      await notification.save();
 
       logger.info('Notification processed', {
         notificationId,
@@ -75,41 +79,30 @@ class OrchestrationService {
 
     } catch (error) {
       logger.error('Error processing notification:', error);
-      await this.updateNotificationStatus(notificationId, 'failed');
+      await Notification.findByIdAndUpdate(notificationId, { status: 'failed' });
       throw error;
     }
   }
 
-  /**
-   * Determine which channels to use
-   */
   async determineChannels(notification) {
     const { user_id, event_type, priority, preferred_channels } = notification;
     
-    // Get user info
-    const userResult = await pool.query(
-      'SELECT email, phone, push_token FROM users WHERE id = $1',
-      [user_id]
-    );
+    const userPref = await UserPreference.findOne({ user_id });
     
-    if (userResult.rows.length === 0) {
-      throw new Error('User not found');
+    if (!userPref) {
+      logger.warn('User preferences not found', { user_id });
+      return [];
     }
     
-    const user = userResult.rows[0];
     const availableChannels = [];
-
-    // Determine category based on event type
     const category = this.getEventCategory(event_type);
-
-    // Check each channel
-    const channelsToCheck = preferred_channels || ['email', 'sms', 'push', 'in_app'];
+    const channelsToCheck = preferred_channels || ['email', 'sms', 'push', 'inapp'];
     
     for (const channel of channelsToCheck) {
       // Check if user has contact info for channel
-      if (channel === 'email' && !user.email) continue;
-      if (channel === 'sms' && !user.phone) continue;
-      if (channel === 'push' && !user.push_token) continue;
+      if (channel === 'email' && !userPref.email) continue;
+      if (channel === 'sms' && !userPref.phone) continue;
+      if (channel === 'push' && !userPref.push_token) continue;
 
       // Check user preferences
       const allowed = await preferenceService.isChannelAllowed(user_id, channel, category);
@@ -118,8 +111,8 @@ class OrchestrationService {
         continue;
       }
 
-      // Check rate limiting (skip for critical priority)
-      if (priority !== 'critical') {
+      // Check rate limiting (skip for urgent priority)
+      if (priority !== 'urgent') {
         const withinLimit = await checkRateLimit(user_id, channel);
         if (!withinLimit) {
           logger.warn('Rate limit exceeded', { user_id, channel });
@@ -127,8 +120,8 @@ class OrchestrationService {
         }
       }
 
-      // Check quiet hours (skip for critical and security)
-      if (priority !== 'critical' && category !== 'security') {
+      // Check quiet hours (skip for urgent and security)
+      if (priority !== 'urgent' && category !== 'security') {
         if (isQuietHours() && (channel === 'sms' || channel === 'push')) {
           logger.info('Skipping channel due to quiet hours', { channel });
           continue;
@@ -141,49 +134,55 @@ class OrchestrationService {
     return availableChannels;
   }
 
-  /**
-   * Send notification to specific channel
-   */
   async sendToChannel(notification, channel) {
-    const { id, user_id, event_type, metadata } = notification;
+    const { _id, user_id, event_type, metadata } = notification;
 
     try {
-      // Get template
       const template = await templateService.getTemplate(event_type, channel);
       
       if (!template) {
         logger.warn('Template not found', { event_type, channel });
-        await this.logDelivery(id, channel, 'failed', 0, null, 'Template not found');
+        await this.logDelivery(_id, notification.event_id, channel, 'failed', 'Template not found');
+        
+        // Update notification channels array
+        notification.channels.push({
+          channel_type: channel,
+          status: 'failed',
+          error_message: 'Template not found',
+          retry_count: 0
+        });
+        await notification.save();
+        
         return false;
       }
 
-      // Render template
       const rendered = templateService.renderTemplate(template, metadata);
+      const userPref = await UserPreference.findOne({ user_id });
 
-      // Get user contact info
-      const userResult = await pool.query(
-        'SELECT email, phone, push_token FROM users WHERE id = $1',
-        [user_id]
-      );
-      const user = userResult.rows[0];
-
-      // Send with retry
       const result = await retryWithBackoff(async () => {
-        return await this.sendViaAdapter(channel, user, rendered);
+        return await this.sendViaAdapter(channel, userPref, rendered);
       }, 3, 1000);
 
-      // Log delivery
       await this.logDelivery(
-        id,
+        _id,
+        notification.event_id,
         channel,
         result.success ? 'delivered' : 'failed',
-        1,
-        rendered.body,
         result.error || null,
         result
       );
 
-      // Increment rate limit counter
+      // Update notification channels array
+      notification.channels.push({
+        channel_type: channel,
+        status: result.success ? 'delivered' : 'failed',
+        sent_at: new Date(),
+        delivered_at: result.success ? new Date() : null,
+        error_message: result.error || null,
+        retry_count: result.retryCount || 0
+      });
+      await notification.save();
+
       if (result.success) {
         await incrementRateLimit(user_id, channel);
       }
@@ -192,15 +191,21 @@ class OrchestrationService {
 
     } catch (error) {
       logger.error('Channel delivery failed:', { channel, error: error.message });
-      await this.logDelivery(id, channel, 'failed', 3, null, error.message);
+      await this.logDelivery(_id, notification.event_id, channel, 'failed', error.message);
+      
+      notification.channels.push({
+        channel_type: channel,
+        status: 'failed',
+        error_message: error.message,
+        retry_count: 3
+      });
+      await notification.save();
+      
       return false;
     }
   }
 
-  /**
-   * Send via appropriate adapter
-   */
-  async sendViaAdapter(channel, user, rendered) {
+  async sendViaAdapter(channel, userPref, rendered) {
     const adapter = this.adapters[channel];
     
     if (!adapter) {
@@ -209,69 +214,42 @@ class OrchestrationService {
 
     switch (channel) {
       case 'email':
-        return await adapter.send(user.email, rendered.subject, rendered.body);
+        return await adapter.send(userPref.email, rendered.subject, rendered.body);
       case 'sms':
-        return await adapter.send(user.phone, rendered.body);
+        return await adapter.send(userPref.phone, rendered.body);
       case 'push':
-        return await adapter.send(user.push_token, rendered.subject || 'Notification', rendered.body);
-      case 'in_app':
-        return await adapter.send(user.id, rendered.subject || 'Notification', rendered.body);
+        return await adapter.send(userPref.push_token, rendered.subject || 'Notification', rendered.body);
+      case 'inapp':
+        return await adapter.send(userPref.user_id, rendered.subject || 'Notification', rendered.body);
       default:
         throw new Error(`Unknown channel: ${channel}`);
     }
   }
 
-  /**
-   * Get notification by ID
-   */
-  async getNotification(notificationId) {
-    const result = await pool.query(
-      'SELECT * FROM notifications WHERE id = $1',
-      [notificationId]
-    );
-    return result.rows[0];
+  async logDelivery(notificationId, eventId, channel, status, errorMessage, providerResponse = null) {
+    try {
+      await DeliveryLog.create({
+        notification_id: notificationId,
+        event_id: eventId,
+        channel,
+        status,
+        error_message: errorMessage,
+        provider_response: providerResponse,
+        timestamp: new Date()
+      });
+    } catch (error) {
+      logger.error('Error logging delivery:', error);
+    }
   }
 
-  /**
-   * Update notification status
-   */
-  async updateNotificationStatus(notificationId, status) {
-    await pool.query(
-      'UPDATE notifications SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
-      [status, notificationId]
-    );
-  }
-
-  /**
-   * Log delivery attempt
-   */
-  async logDelivery(notificationId, channel, status, attemptCount, renderedContent, errorMessage, providerResponse = null) {
-    await pool.query(
-      `INSERT INTO delivery_logs 
-       (notification_id, channel, status, attempt_count, rendered_content, error_message, provider_response, sent_at, delivered_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, 
-         CASE WHEN $3 IN ('sent', 'delivered') THEN CURRENT_TIMESTAMP ELSE NULL END,
-         CASE WHEN $3 = 'delivered' THEN CURRENT_TIMESTAMP ELSE NULL END)`,
-      [notificationId, channel, status, attemptCount, renderedContent, errorMessage, 
-       providerResponse ? JSON.stringify(providerResponse) : null]
-    );
-  }
-
-  /**
-   * Determine event category
-   */
   getEventCategory(eventType) {
     const categoryMap = {
       user_signup: 'transactional',
-      order_placed: 'transactional',
-      order_shipped: 'transactional',
+      order_confirmation: 'transactional',
       password_reset: 'security',
       security_alert: 'security',
-      login_alert: 'security',
-      promotional: 'marketing',
-      newsletter: 'marketing',
-      system_maintenance: 'system_alerts',
-      account_update: 'transactional'
+      marketing: 'marketing',
+      system_notification: 'system'
     };
 
     return categoryMap[eventType] || 'transactional';
