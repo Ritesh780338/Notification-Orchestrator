@@ -11,11 +11,30 @@ class IngestionService {
       const { event_type, user_id, priority, metadata, preferred_channels, schedule_time } = eventData;
 
       // Verify user exists or create default preferences
-      let user = await UserPreference.findOne({ user_id });
-      if (!user) {
-        user = await UserPreference.create({
+      let userPref = await UserPreference.findOne({ user_id });
+      const User = require('../models/User');
+      const userDoc = await User.findById(user_id);
+      
+      if (!userPref) {
+        // Create new preferences with email
+        userPref = await UserPreference.create({
           user_id,
+          email: userDoc?.email || null,
           preferences: this.getDefaultPreferences()
+        });
+        
+        logger.info('Created user preferences with email', { 
+          user_id, 
+          email: userDoc?.email 
+        });
+      } else if (!userPref.email && userDoc?.email) {
+        // Update existing preferences with email if missing
+        userPref.email = userDoc.email;
+        await userPref.save();
+        
+        logger.info('Updated user preferences with email', { 
+          user_id, 
+          email: userDoc.email 
         });
       }
 

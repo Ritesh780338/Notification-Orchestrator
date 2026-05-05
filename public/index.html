@@ -22,12 +22,11 @@
                 <button class="nav-item active" data-tab="dashboard">
                     <i class="fas fa-chart-line"></i><span>Dashboard</span>
                 </button>
+                <button class="nav-item" data-tab="users">
+                    <i class="fas fa-users"></i><span>Users</span>
+                </button>
                 <button class="nav-item" data-tab="send">
                     <i class="fas fa-paper-plane"></i><span>Send Notification</span>
-                </button>
-                <button class="nav-item" data-tab="quicktest">
-                    <i class="fas fa-bolt"></i><span>Quick Test</span>
-                    <span class="nav-badge">NEW</span>
                 </button>
                 <button class="nav-item" data-tab="preferences">
                     <i class="fas fa-sliders-h"></i><span>User Preferences</span>
@@ -46,6 +45,9 @@
                         <span class="author-name">Ritesh Sharma</span>
                         <span class="author-id">240410700085</span>
                     </div>
+                    <button class="logout-btn" onclick="handleLogout()" title="Logout">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
                 </div>
             </div>
         </aside>
@@ -56,9 +58,15 @@
             <header class="topbar">
                 <div class="topbar-left">
                     <h1 class="page-title" id="page-title">Dashboard</h1>
-                    <span class="page-subtitle" id="page-subtitle">System overview &amp; analytics</span>
+                    <span class="page-subtitle" id="page-subtitle">Your personal overview &amp; analytics</span>
                 </div>
                 <div class="topbar-right">
+                    <!-- In-App Notification Bell -->
+                    <div class="notification-bell" id="notification-bell" onclick="toggleNotificationCenter()">
+                        <i class="fas fa-bell"></i>
+                        <span class="notification-badge" id="notification-badge" style="display:none;">0</span>
+                    </div>
+                    
                     <div class="api-status" id="api-status">
                         <span class="status-dot"></span>
                         <span>API Connected</span>
@@ -74,6 +82,18 @@
 
                 <!-- ===== DASHBOARD TAB ===== -->
                 <div id="dashboard" class="tab-content active">
+                    <div class="user-dashboard-header" style="background: linear-gradient(135deg, rgba(99, 102, 247, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%); border-left: 4px solid #6366f1; padding: 1rem 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 1rem;">
+                        <i class="fas fa-user-circle" style="font-size: 2rem; color: #6366f1;"></i>
+                        <div>
+                            <h3 style="margin: 0; color: #e8eaf0; font-size: 1.1rem;">
+                                <span id="dashboard-user-name">Your</span> Personal Dashboard
+                            </h3>
+                            <p style="margin: 0.25rem 0 0 0; color: #94a3b8; font-size: 0.9rem;">
+                                Showing notifications and statistics for your account only
+                            </p>
+                        </div>
+                    </div>
+                    
                     <div class="stats-grid">
                         <div class="stat-card stat-total">
                             <div class="stat-icon-wrap"><i class="fas fa-bell"></i></div>
@@ -135,25 +155,69 @@
                     </div>
                 </div>
 
+                <!-- ===== USERS TAB ===== -->
+                <div id="users" class="tab-content">
+                    <div class="search-bar-row">
+                        <div class="search-input-wrap">
+                            <i class="fas fa-search search-icon"></i>
+                            <input type="text" id="user-search" placeholder="Search by name, username, email, or user ID...">
+                        </div>
+                        <button id="search-users" class="btn btn-primary">
+                            <i class="fas fa-search"></i> Search
+                        </button>
+                        <button class="btn btn-outline" onclick="loadAllUsers()">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                    </div>
+
+                    <div id="users-list-container">
+                        <div class="users-grid" id="users-grid">
+                            <div class="empty-state">
+                                <i class="fas fa-users"></i>
+                                <p>Click "Refresh" to load users</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- ===== SEND NOTIFICATION TAB ===== -->
                 <div id="send" class="tab-content">
                     <div class="two-col-layout">
                         <div class="form-panel">
                             <div class="panel-header">
                                 <h3><i class="fas fa-paper-plane"></i> Compose Notification</h3>
-                                <button type="button" class="btn btn-sm btn-accent" id="auto-fill-btn" onclick="autoFillForm()">
-                                    <i class="fas fa-magic"></i> Auto-Fill Demo
-                                </button>
                             </div>
 
                             <form id="send-notification-form" class="form">
                                 <div class="form-group">
                                     <label for="user-id">
-                                        <i class="fas fa-user"></i> User ID
+                                        <i class="fas fa-user"></i> User ID or Username
                                         <span class="required">*</span>
                                     </label>
-                                    <input type="text" id="user-id" required placeholder="e.g., user_123 or user_001">
-                                    <span class="field-hint">The recipient's unique identifier (required)</span>
+                                    <input type="text" id="user-id" required placeholder="e.g., user_123 or john_doe">
+                                    <span class="field-hint">Enter the user's ID or username (required)</span>
+                                </div>
+
+                                <!-- User Confirmation Display -->
+                                <div id="user-confirmation" class="user-confirmation" style="display:none;">
+                                    <div class="confirmation-header">
+                                        <i class="fas fa-check-circle"></i>
+                                        <span>Sending to:</span>
+                                    </div>
+                                    <div class="confirmation-details">
+                                        <div class="confirmation-row">
+                                            <span class="confirmation-label">Name:</span>
+                                            <span class="confirmation-value" id="confirm-name">—</span>
+                                        </div>
+                                        <div class="confirmation-row">
+                                            <span class="confirmation-label">Username:</span>
+                                            <span class="confirmation-value" id="confirm-username">—</span>
+                                        </div>
+                                        <div class="confirmation-row">
+                                            <span class="confirmation-label">Email:</span>
+                                            <span class="confirmation-value" id="confirm-email">—</span>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <div class="form-row">
@@ -200,12 +264,6 @@
                                                 <i class="fas fa-sms"></i> SMS
                                             </span>
                                         </label>
-                                        <label class="channel-chip" data-channel="push">
-                                            <input type="checkbox" name="channel" value="push">
-                                            <span class="chip-inner">
-                                                <i class="fas fa-mobile-alt"></i> Push
-                                            </span>
-                                        </label>
                                         <label class="channel-chip" data-channel="inapp">
                                             <input type="checkbox" name="channel" value="inapp">
                                             <span class="chip-inner">
@@ -220,6 +278,29 @@
                                     <label for="metadata">
                                         <i class="fas fa-code"></i> Metadata (JSON)
                                     </label>
+                                    <div class="template-selector" style="margin-bottom: 0.5rem;">
+                                        <label style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.25rem; display: block;">Quick Templates:</label>
+                                        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                                            <button type="button" class="btn btn-xs btn-ghost" onclick="loadJsonTemplate({first_name: 'John', last_name: 'Doe'})">
+                                                👤 User Info
+                                            </button>
+                                            <button type="button" class="btn btn-xs btn-ghost" onclick="loadJsonTemplate({order_id: 'ORD-12345', amount: '$99.99', items: 3})">
+                                                📦 Order
+                                            </button>
+                                            <button type="button" class="btn btn-xs btn-ghost" onclick="loadJsonTemplate({reset_code: '123456', expires_in: '15 minutes'})">
+                                                🔑 Password Reset
+                                            </button>
+                                            <button type="button" class="btn btn-xs btn-ghost" onclick="loadJsonTemplate({alert_type: 'Login from new device', location: 'Mumbai, India', ip: '192.168.1.1'})">
+                                                🔒 Security Alert
+                                            </button>
+                                            <button type="button" class="btn btn-xs btn-ghost" onclick="loadJsonTemplate({campaign: 'Summer Sale', discount: '30%', code: 'SUMMER30'})">
+                                                📣 Marketing
+                                            </button>
+                                            <button type="button" class="btn btn-xs btn-ghost" onclick="loadJsonTemplate({})">
+                                                ⭕ Empty
+                                            </button>
+                                        </div>
+                                    </div>
                                     <div class="code-editor-wrap">
                                         <textarea id="metadata" rows="6" placeholder='Example:
 {
@@ -231,7 +312,7 @@
                                             <i class="fas fa-align-left"></i>
                                         </button>
                                     </div>
-                                    <span class="field-hint">💡 Template variables as JSON — use {{variable}} in templates. Click "Auto-Fill Demo" for examples!</span>
+                                    <span class="field-hint">💡 Template variables as JSON — use {{variable}} in templates</span>
                                 </div>
 
                                 <div class="form-group">
@@ -254,66 +335,21 @@
                             </form>
 
                             <div id="send-result" class="result-box" style="display:none;"></div>
-                            
-                            <!-- Quick Help Section -->
-                            <div class="help-box" style="margin-top: 1rem; padding: 1rem; background: #1e293b; border-radius: 8px; border-left: 4px solid #6366f1;">
-                                <h4 style="margin: 0 0 0.5rem 0; color: #6366f1; font-size: 0.9rem;">
-                                    <i class="fas fa-info-circle"></i> Quick Testing Guide
-                                </h4>
-                                <ul style="margin: 0; padding-left: 1.5rem; font-size: 0.85rem; color: #94a3b8; line-height: 1.6;">
-                                    <li><strong>Auto-Fill:</strong> Click "Auto-Fill Demo" button above to populate with test data</li>
-                                    <li><strong>User ID:</strong> Any string like <code>user_001</code> or <code>test_user_123</code></li>
-                                    <li><strong>Metadata:</strong> Must be valid JSON. Example: <code>{"first_name": "John"}</code></li>
-                                    <li><strong>Channels:</strong> Select at least one channel (Email, SMS, Push, or In-App)</li>
-                                    <li><strong>Console:</strong> Press <kbd>F12</kbd> to see detailed logs and errors</li>
-                                </ul>
-                            </div>
                         </div>
 
-                        <!-- Demo Scenarios Panel -->
+                        <!-- User Selection Panel -->
                         <div class="scenarios-panel">
                             <div class="panel-header">
-                                <h3><i class="fas fa-flask"></i> Demo Scenarios</h3>
-                                <span class="panel-hint">Click to auto-fill</span>
+                                <h3><i class="fas fa-users"></i> Quick User Select</h3>
+                                <span class="panel-hint">Recent users</span>
                             </div>
-                            <div class="scenario-list" id="scenario-list"></div>
+                            <div class="scenario-list" id="recent-users-list">
+                                <div class="empty-state">
+                                    <i class="fas fa-info-circle"></i>
+                                    <p>Go to Users tab to see all users</p>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
-
-                <!-- ===== QUICK TEST TAB ===== -->
-                <div id="quicktest" class="tab-content">
-                    <div class="quicktest-intro">
-                        <div class="intro-icon"><i class="fas fa-bolt"></i></div>
-                        <div>
-                            <h3>Quick Test Suite</h3>
-                            <p>Fire pre-configured notifications across all channels with one click. Perfect for testing your setup.</p>
-                        </div>
-                    </div>
-
-                    <div class="quicktest-grid" id="quicktest-grid"></div>
-
-                    <div class="bulk-actions">
-                        <h3><i class="fas fa-layer-group"></i> Bulk Actions</h3>
-                        <div class="bulk-btns">
-                            <button class="btn btn-primary" onclick="sendAllNotifications()">
-                                <i class="fas fa-rocket"></i> Send All Test Notifications
-                            </button>
-                            <button class="btn btn-outline" onclick="sendAllChannels()">
-                                <i class="fas fa-broadcast-tower"></i> Test All Channels
-                            </button>
-                            <button class="btn btn-outline" onclick="sendAllPriorities()">
-                                <i class="fas fa-flag"></i> Test All Priorities
-                            </button>
-                        </div>
-                    </div>
-
-                    <div id="quicktest-log" class="test-log" style="display:none;">
-                        <div class="log-header">
-                            <h4><i class="fas fa-terminal"></i> Test Log</h4>
-                            <button class="btn btn-xs btn-ghost" onclick="clearLog()">Clear</button>
-                        </div>
-                        <div id="log-entries" class="log-entries"></div>
                     </div>
                 </div>
 
@@ -322,13 +358,13 @@
                     <div class="search-bar-row">
                         <div class="search-input-wrap">
                             <i class="fas fa-user search-icon"></i>
-                            <input type="text" id="pref-user-id" placeholder="Enter User ID (e.g., user_123)">
+                            <input type="text" id="pref-user-id" placeholder="Enter User ID or Username (e.g., user_123 or john_doe)">
                         </div>
                         <button id="load-preferences" class="btn btn-primary">
                             <i class="fas fa-search"></i> Load Preferences
                         </button>
-                        <button class="btn btn-outline" onclick="document.getElementById('pref-user-id').value='user_demo'; document.getElementById('load-preferences').click()">
-                            <i class="fas fa-magic"></i> Load Demo User
+                        <button class="btn btn-outline" onclick="document.getElementById('pref-user-id').value=''; document.getElementById('load-preferences').click()">
+                            <i class="fas fa-sync-alt"></i> Clear
                         </button>
                     </div>
 
@@ -492,6 +528,29 @@
 
     <!-- Toast Notification -->
     <div id="toast-container" class="toast-container"></div>
+
+    <!-- In-App Notification Center -->
+    <div id="notification-center" class="notification-center" style="display:none;">
+        <div class="notification-center-header">
+            <h3><i class="fas fa-bell"></i> Notifications</h3>
+            <div class="notification-center-actions">
+                <button class="btn btn-xs btn-ghost" onclick="markAllNotificationsRead()" title="Mark all as read">
+                    <i class="fas fa-check-double"></i>
+                </button>
+                <button class="btn btn-xs btn-ghost" onclick="refreshNotifications()" title="Refresh">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+                <button class="btn btn-xs btn-ghost" onclick="toggleNotificationCenter()" title="Close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+        <div class="notification-center-body" id="notification-center-body">
+            <div class="notification-center-loading">
+                <i class="fas fa-spinner fa-spin"></i> Loading notifications...
+            </div>
+        </div>
+    </div>
 
     <script src="/js/app.js"></script>
 </body>

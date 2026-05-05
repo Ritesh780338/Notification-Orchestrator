@@ -66,18 +66,68 @@ router.get('/user/:userId', async (req, res, next) => {
 });
 
 /**
+ * GET /api/notifications/recent
+ * Get recent notifications (user-specific)
+ */
+router.get('/recent', async (req, res, next) => {
+  try {
+    const { limit = 10, user_id } = req.query;
+
+    // Build query with user filter
+    const query = {};
+    if (user_id) {
+      query.user_id = user_id;
+    }
+
+    const notifications = await Notification.find(query)
+      .sort({ created_at: -1 })
+      .limit(parseInt(limit))
+      .lean();
+
+    res.json({
+      notifications,
+      user_id: user_id || 'all'
+    });
+
+  } catch (error) {
+    logger.error('Error fetching recent notifications:', error);
+    next(error);
+  }
+});
+
+/**
  * GET /api/notifications/stats
- * Get notification statistics
+ * Get notification statistics (user-specific)
  */
 router.get('/stats', async (req, res, next) => {
   try {
-    const { startDate, endDate } = req.query;
+    const { startDate, endDate, user_id } = req.query;
     
-    const dateFilter = {};
-    if (startDate) dateFilter.$gte = new Date(startDate);
-    if (endDate) dateFilter.$lte = new Date(endDate);
+    // Build base query with user filter
+    const query = {};
+    
+    // Filter by logged-in user if user_id provided
+    if (user_id) {
+      query.user_id = user_id;
+    }
+    
+    // Add date filters
+    if (startDate || endDate) {
+      query.created_at = {};
+      if (startDate) query.created_at.$gte = new Date(startDate);
+      if (endDate) query.created_at.$lte = new Date(endDate);
+    }
 
-    const query = Object.keys(dateFilter).length > 0 ? { created_at: dateFilter } : {};
+    // Build delivery log query
+    const deliveryQuery = {};
+    if (user_id) {
+      deliveryQuery.user_id = user_id;
+    }
+    if (startDate || endDate) {
+      deliveryQuery.timestamp = {};
+      if (startDate) deliveryQuery.timestamp.$gte = new Date(startDate);
+      if (endDate) deliveryQuery.timestamp.$lte = new Date(endDate);
+    }
 
     const [statusStats, channelStats, eventTypeStats, total] = await Promise.all([
       Notification.aggregate([
@@ -85,7 +135,7 @@ router.get('/stats', async (req, res, next) => {
         { $group: { _id: '$status', count: { $sum: 1 } } }
       ]),
       DeliveryLog.aggregate([
-        { $match: Object.keys(dateFilter).length > 0 ? { timestamp: dateFilter } : {} },
+        { $match: deliveryQuery },
         { $group: { _id: { channel: '$channel', status: '$status' }, count: { $sum: 1 } } }
       ]),
       Notification.aggregate([
@@ -97,6 +147,7 @@ router.get('/stats', async (req, res, next) => {
 
     res.json({
       total,
+      user_id: user_id || 'all',
       by_status: statusStats.reduce((acc, item) => {
         acc[item._id] = item.count;
         return acc;

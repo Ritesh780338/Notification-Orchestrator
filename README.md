@@ -51,12 +51,33 @@ npm install
 
 # 2. Configure environment
 # Edit .env file with your MongoDB and Redis credentials
+# Make sure to set JWT_SECRET for authentication
 
 # 3. Start the application
 npm start
 
-# 4. Open browser
-# Navigate to: http://localhost:3000
+# 4. Open browser and register a new user
+# Navigate to: http://localhost:3000/login.html
+# Click "Register" to create your first user account
+```
+
+### 🔐 Authentication
+
+The application includes a complete authentication system:
+
+**Features:**
+- JWT-based authentication
+- Secure password hashing with bcrypt
+- Login/Register pages
+- Protected routes
+- Session management
+- Logout functionality
+
+**Creating Users:**
+```bash
+# Register a new user via the web interface
+# Navigate to http://localhost:3000/login.html
+# Click "Register" and fill in the form
 ```
 
 ---
@@ -94,6 +115,20 @@ Complete documentation is available in the [`docs/`](docs/) folder:
 
 ## 📡 API Endpoints
 
+### Authentication
+```bash
+POST /api/auth/register
+POST /api/auth/login
+POST /api/auth/logout
+GET /api/auth/me
+```
+
+### Users
+```bash
+GET /api/users                    # Get all users (requires auth)
+GET /api/users/:userId            # Get user by ID or username
+```
+
 ### Send Notification
 ```bash
 POST /api/notifications/events
@@ -101,7 +136,8 @@ Content-Type: application/json
 
 {
   "event_type": "user_signup",
-  "user_id": "user_123",
+  "user_id": "user_123",           # Can use user_id OR username
+  "username": "john_doe",          # Alternative to user_id
   "priority": "normal",
   "metadata": {
     "first_name": "John"
@@ -237,28 +273,35 @@ The web dashboard provides:
    - Event type distribution chart
    - Channel performance visualization
 
-2. **Send Notification Tab**: Create and send notifications
-   - User ID input
+2. **Users Tab**: View and manage all registered users
+   - Search users by name, username, or email
+   - View user details (name, email, role)
+   - Quick send notification to any user
+   - View user preferences
+
+3. **Send Notification Tab**: Create and send notifications
+   - User ID or Username input
    - Event type selection
    - Priority levels
    - Channel selection
    - Metadata (JSON)
    - Schedule time (optional)
+   - Quick user selection from recent users
 
-3. **User Preferences Tab**: Manage user notification settings
+4. **User Preferences Tab**: Manage user notification settings
    - Load existing preferences
    - Update contact information
    - Configure channel preferences by category
    - Set quiet hours
    - Global opt-out option
 
-4. **Templates Tab**: View and create notification templates
+5. **Templates Tab**: View and create notification templates
    - List all templates
    - Create new templates
    - Support for all channels
    - Variable substitution
 
-5. **Check Status Tab**: Track notification delivery
+6. **Check Status Tab**: Track notification delivery
    - Search by event ID or notification ID
    - View detailed status
    - Channel-wise delivery information
@@ -326,17 +369,20 @@ The application is fully functional and can be tested via:
 
 ### Example Test Flow
 
-1. Open http://localhost:3000
-2. Go to "Send Notification" tab
-3. Fill in:
-   - User ID: `test_user_001`
+1. Open http://localhost:3000/login.html
+2. Register a new user account
+3. Login with your credentials
+4. Go to "Users" tab to see all registered users
+5. Click "Send Notification" on any user
+6. Fill in the notification details:
    - Event Type: `user_signup`
    - Metadata: `{"first_name": "John"}`
-4. Click "Send Notification"
-5. Copy the Event ID from the response
-6. Go to "Check Status" tab
-7. Paste the Event ID and click "Check"
-8. View the notification status and delivery details
+   - Select channels (Email, SMS, etc.)
+7. Click "Send Notification"
+8. Copy the Event ID from the response
+9. Go to "Check Status" tab
+10. Paste the Event ID and click "Track"
+11. View the notification status and delivery details
 
 ---
 

@@ -33,20 +33,31 @@ console.log('[STARTUP] services loaded');
 
 // Import routes
 console.log('[STARTUP] loading routes...');
+const authRouter = require('./api/routes/auth');
+console.log('[STARTUP] auth route loaded');
 const eventsRouter = require('./api/routes/events');
 console.log('[STARTUP] events route loaded');
+const usersRouter = require('./api/routes/users');
+console.log('[STARTUP] users route loaded');
 const preferencesRouter = require('./api/routes/preferences');
 console.log('[STARTUP] preferences route loaded');
 const statusRouter = require('./api/routes/status');
 console.log('[STARTUP] status route loaded');
 const templatesRouter = require('./api/routes/templates');
 console.log('[STARTUP] templates route loaded');
+const testRouter = require('./api/routes/test');
+console.log('[STARTUP] test route loaded');
+const inappRouter = require('./api/routes/inapp');
+console.log('[STARTUP] inapp route loaded');
 
 const app = express();
 const PORT = process.env.PORT || 0;
 
 // Middleware
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: false,  // Disable CSP for development
+  crossOriginEmbedderPolicy: false
+}));
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -73,10 +84,14 @@ app.get('/health', (req, res) => {
 });
 
 // API Routes
+app.use('/api/auth', authRouter);
 app.use('/api/notifications/events', eventsRouter);
+app.use('/api/users', usersRouter);
 app.use('/api/users', preferencesRouter);
 app.use('/api/notifications', statusRouter);
 app.use('/api/templates', templatesRouter);
+app.use('/api/test', testRouter);
+app.use('/api/inapp', inappRouter);
 
 // Root API endpoint
 app.get('/api', (req, res) => {
@@ -88,6 +103,11 @@ app.get('/api', (req, res) => {
     database: 'MongoDB',
     endpoints: {
       health: 'GET /health',
+      login: 'POST /api/auth/login',
+      register: 'POST /api/auth/register',
+      logout: 'POST /api/auth/logout',
+      getUsers: 'GET /api/users',
+      getUser: 'GET /api/users/:userId',
       ingestEvent: 'POST /api/notifications/events',
       getPreferences: 'GET /api/users/:userId/preferences',
       updatePreferences: 'PUT /api/users/:userId/preferences',
@@ -96,6 +116,11 @@ app.get('/api', (req, res) => {
       createTemplate: 'POST /api/templates'
     }
   });
+});
+
+// Serve login page for unauthenticated users
+app.get('/login.html', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/login.html'));
 });
 
 // Serve frontend for all other routes

@@ -160,7 +160,7 @@ class OrchestrationService {
       const userPref = await UserPreference.findOne({ user_id });
 
       const result = await retryWithBackoff(async () => {
-        return await this.sendViaAdapter(channel, userPref, rendered);
+        return await this.sendViaAdapter(channel, userPref, rendered, notification);
       }, 3, 1000);
 
       await this.logDelivery(
@@ -205,7 +205,7 @@ class OrchestrationService {
     }
   }
 
-  async sendViaAdapter(channel, userPref, rendered) {
+  async sendViaAdapter(channel, userPref, rendered, notification) {
     const adapter = this.adapters[channel];
     
     if (!adapter) {
@@ -220,7 +220,23 @@ class OrchestrationService {
       case 'push':
         return await adapter.send(userPref.push_token, rendered.subject || 'Notification', rendered.body);
       case 'inapp':
-        return await adapter.send(userPref.user_id, rendered.subject || 'Notification', rendered.body);
+        // Pass metadata for in-app notifications
+        const inappMetadata = {
+          event_type: notification.event_type,
+          priority: notification.priority,
+          ...notification.metadata
+        };
+        console.log('[Orchestration] Sending in-app notification:', {
+          user_id: userPref.user_id,
+          subject: rendered.subject,
+          metadata: inappMetadata
+        });
+        return await adapter.send(
+          userPref.user_id,
+          rendered.subject || 'Notification',
+          rendered.body,
+          inappMetadata
+        );
       default:
         throw new Error(`Unknown channel: ${channel}`);
     }

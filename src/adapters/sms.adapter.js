@@ -15,13 +15,19 @@ class SMSAdapter {
     try {
       // If mock provider, use mock implementation
       if (this.provider === 'mock') {
-        logger.info('SMS sent (mock)', { phoneNumber, messageLength: message.length });
+        logger.info('📱 SMS sent (mock mode)', { 
+          phoneNumber, 
+          messageLength: message.length,
+          preview: message.substring(0, 50) + '...'
+        });
         await new Promise(resolve => setTimeout(resolve, 100));
         
         return {
           success: true,
           messageId: `sms_mock_${Date.now()}`,
-          provider: 'mock'
+          provider: 'mock',
+          phoneNumber,
+          message: 'SMS sent in mock mode (no actual SMS sent)'
         };
       }
 

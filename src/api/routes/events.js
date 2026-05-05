@@ -15,14 +15,15 @@ const eventSchema = Joi.object({
     'security_alert',
     'system_notification'
   ).required(),
-  user_id: Joi.string().required(),
+  user_id: Joi.string().optional(),
+  username: Joi.string().optional(),
   priority: Joi.string().valid('low', 'normal', 'high', 'urgent').default('normal'),
   metadata: Joi.object().default({}),
   preferred_channels: Joi.array().items(
     Joi.string().valid('email', 'sms', 'push', 'inapp')
   ).optional(),
   schedule_time: Joi.date().iso().optional()
-});
+}).or('user_id', 'username');
 
 /**
  * POST /api/notifications/events
@@ -38,6 +39,20 @@ router.post('/', async (req, res, next) => {
         error: 'Validation error',
         details: error.details.map(d => d.message)
       });
+    }
+
+    // If username is provided, resolve it to user_id
+    if (value.username && !value.user_id) {
+      const User = require('../../models/User');
+      const user = await User.findOne({ username: value.username });
+      if (!user) {
+        return res.status(404).json({
+          error: 'User not found',
+          details: [`No user found with username: ${value.username}`]
+        });
+      }
+      value.user_id = user._id.toString();
+      delete value.username;
     }
 
     // Ingest event
