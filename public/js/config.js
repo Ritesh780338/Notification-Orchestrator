@@ -24,15 +24,3 @@ console.log('[Config] Current hostname:', window.location.hostname);
 console.log('[Config] API Base URL:', API_BASE);
 console.log('[Config] Full API URL example:', API_BASE + '/health');
 console.log('========================');
-
-// Validate production configuration
-if (!isLocalhost && PRODUCTION_API_URL.includes('YOUR-RENDER-APP-NAME')) {
-  console.error('⚠️  WARNING: Production API URL not configured!');
-  console.error('⚠️  Please update PRODUCTION_API_URL in public/js/config.js');
-  console.error('⚠️  Replace YOUR-RENDER-APP-NAME with your actual Render app name');
-  
-  // Show user-friendly error
-  setTimeout(() => {
-    alert('⚠️ Configuration Error\n\nThe application is not configured for production.\n\nPlease contact the administrator to update the API URL in config.js');
-  }, 1000);
-}

@@ -71,14 +71,11 @@ const corsOptions = {
       'http://localhost:5000',
       'http://127.0.0.1:3000',
       'http://127.0.0.1:5000',
-      'notification-orchestrator.netlify.app'
-      // Add your Netlify URL here after deployment
-      // Example: 'https://your-app-name.netlify.app',
-      // Example: 'https://your-custom-domain.com'
+      'https://notification-orchestrator.netlify.app'
     ];
     
     // Allow any Netlify subdomain
-    if (origin.includes('.netlify.app')) {
+    if (origin && origin.includes('.netlify.app')) {
       return callback(null, true);
     }
     
@@ -88,6 +85,7 @@ const corsOptions = {
     } else {
       console.log('[CORS] Blocked origin:', origin);
       callback(null, true); // Allow all origins in development - change to false in production
+    }
     }
   },
   credentials: true,
