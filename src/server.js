@@ -86,7 +86,6 @@ const corsOptions = {
       console.log('[CORS] Blocked origin:', origin);
       callback(null, true); // Allow all origins in development - change to false in production
     }
-    }
   },
   credentials: true,
   optionsSuccessStatus: 200,
