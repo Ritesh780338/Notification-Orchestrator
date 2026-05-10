@@ -7,8 +7,7 @@
 'use strict';
 
 // ─── Config ──────────────────────────────────────────────────────────────────
-
-const API_BASE = '/api';
+// API_BASE is now defined in config.js and loaded before this file
 
 // Authentication state
 const auth = {

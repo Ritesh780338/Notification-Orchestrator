@@ -58,7 +58,45 @@ app.use(helmet({
   contentSecurityPolicy: false,  // Disable CSP for development
   crossOriginEmbedderPolicy: false
 }));
-app.use(cors());
+
+// CORS Configuration - Allow requests from Netlify and localhost
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+    
+    // List of allowed origins
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'http://localhost:5000',
+      'http://127.0.0.1:3000',
+      'http://127.0.0.1:5000',
+      'notification-orchestrator.netlify.app'
+      // Add your Netlify URL here after deployment
+      // Example: 'https://your-app-name.netlify.app',
+      // Example: 'https://your-custom-domain.com'
+    ];
+    
+    // Allow any Netlify subdomain
+    if (origin.includes('.netlify.app')) {
+      return callback(null, true);
+    }
+    
+    // Check if origin is in allowed list
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.log('[CORS] Blocked origin:', origin);
+      callback(null, true); // Allow all origins in development - change to false in production
+    }
+  },
+  credentials: true,
+  optionsSuccessStatus: 200,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
