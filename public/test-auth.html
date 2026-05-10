@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Auth & Notifications</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .section {
+            background: #2a2a2a;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        button {
+            background: #6366f1;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #5558e3;
+        }
+        pre {
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .success { color: #22c55e; }
+        .error { color: #ef4444; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Auth & Notification Debugger</h1>
+
+    <div class="section">
+        <h2>1. Check LocalStorage</h2>
+        <button onclick="checkLocalStorage()">Check Auth Data</button>
+        <pre id="localStorage-output"></pre>
+    </div>
+
+    <div class="section">
+        <h2>2. Test API Call</h2>
+        <button onclick="testAPI()">Test /api/inapp/notifications</button>
+        <pre id="api-output"></pre>
+    </div>
+
+    <div class="section">
+        <h2>3. Test Unread Count</h2>
+        <button onclick="testUnreadCount()">Test /api/inapp/unread-count</button>
+        <pre id="unread-output"></pre>
+    </div>
+
+    <div class="section">
+        <h2>4. Fix Instructions</h2>
+        <div id="fix-instructions"></div>
+    </div>
+
+    <script>
+        function checkLocalStorage() {
+            const output = document.getElementById('localStorage-output');
+            const token = localStorage.getItem('token');
+            const userStr = localStorage.getItem('user');
+            
+            if (!token || !userStr) {
+                output.innerHTML = '<span class="error">❌ Not logged in! Please login first.</span>';
+                return;
+            }
+
+            const user = JSON.parse(userStr);
+            
+            output.innerHTML = `<span class="success">✅ Auth data found!</span>
+
+Token: ${token.substring(0, 20)}...
+
+User Object:
+${JSON.stringify(user, null, 2)}
+
+<span class="success">User ID fields:</span>
+  - user.id: ${user.id || '<span class="error">NOT SET</span>'}
+  - user._id: ${user._id || '<span class="error">NOT SET</span>'}
+  - user.user_id: ${user.user_id || '<span class="error">NOT SET</span>'}
+  - user.username: ${user.username || '<span class="error">NOT SET</span>'}
+
+<span class="success">✅ Frontend should use: ${user.id || user._id || user.user_id || user.username}</span>`;
+        }
+
+        async function testAPI() {
+            const output = document.getElementById('api-output');
+            output.innerHTML = 'Loading...';
+
+            const userStr = localStorage.getItem('user');
+            if (!userStr) {
+                output.innerHTML = '<span class="error">❌ Not logged in!</span>';
+                return;
+            }
+
+            const user = JSON.parse(userStr);
+            const userId = user.id || user._id || user.user_id || user.username;
+
+            try {
+                const response = await fetch(`/api/inapp/notifications?user_id=${encodeURIComponent(userId)}&limit=50`, {
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    }
+                });
+
+                const data = await response.json();
+
+                output.innerHTML = `<span class="success">✅ API Response (Status: ${response.status})</span>
+
+${JSON.stringify(data, null, 2)}
+
+<span class="success">Summary:</span>
+  - Notifications: ${data.notifications?.length || 0}
+  - Unread: ${data.unreadCount || 0}
+  - Total: ${data.total || 0}`;
+
+            } catch (error) {
+                output.innerHTML = `<span class="error">❌ API Error: ${error.message}</span>`;
+            }
+        }
+
+        async function testUnreadCount() {
+            const output = document.getElementById('unread-output');
+            output.innerHTML = 'Loading...';
+
+            const userStr = localStorage.getItem('user');
+            if (!userStr) {
+                output.innerHTML = '<span class="error">❌ Not logged in!</span>';
+                return;
+            }
+
+            const user = JSON.parse(userStr);
+            const userId = user.id || user._id || user.user_id || user.username;
+
+            try {
+                const response = await fetch(`/api/inapp/unread-count?user_id=${encodeURIComponent(userId)}`, {
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    }
+                });
+
+                const data = await response.json();
+
+                output.innerHTML = `<span class="success">✅ Unread Count: ${data.count}</span>
+
+${JSON.stringify(data, null, 2)}`;
+
+            } catch (error) {
+                output.innerHTML = `<span class="error">❌ API Error: ${error.message}</span>`;
+            }
+        }
+
+        // Auto-run on load
+        window.onload = () => {
+            checkLocalStorage();
+            
+            const instructions = document.getElementById('fix-instructions');
+            instructions.innerHTML = `
+                <h3>If notifications still don't show:</h3>
+                <ol>
+                    <li>Clear browser cache and reload (Ctrl+Shift+R)</li>
+                    <li>Logout and login again</li>
+                    <li>Check browser console (F12) for errors</li>
+                    <li>Verify user.id is set in localStorage</li>
+                </ol>
+            `;
+        };
+    </script>
+</body>
+</html>

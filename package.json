@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "test": "jest --coverage"
+    "test": "jest --coverage",
+    "sms": "node send-sms.js"
   },
   "keywords": ["notification", "orchestrator", "multi-channel"],
   "author": "Ritesh Sharma (240410700085)",

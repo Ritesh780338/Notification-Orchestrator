@@ -224,7 +224,7 @@ async function checkApiStatus() {
 
 async function loadDashboardStats() {
   // Get current user's ID for filtering
-  const userId = auth.user?.user_id || auth.user?._id;
+  const userId = auth.user?.id || auth.user?._id || auth.user?.user_id;
   
   // Update dashboard header with user's name
   const userNameEl = document.getElementById('dashboard-user-name');
@@ -299,7 +299,7 @@ async function loadRecentActivity() {
   const el = document.getElementById('recent-activity');
   
   // Get current user's ID for filtering
-  const userId = auth.user?.user_id || auth.user?._id;
+  const userId = auth.user?.id || auth.user?._id || auth.user?.user_id;
   
   // Fetch user-specific recent notifications
   const url = userId ? `/notifications/recent?user_id=${userId}&limit=10` : '/notifications/recent?limit=10';
@@ -1054,10 +1054,31 @@ window.toggleNotificationCenter = async function() {
   if (notificationCenterOpen) {
     center.style.display = 'flex';
     await loadInAppNotifications();
+    
+    // Add click-outside-to-close listener
+    setTimeout(() => {
+      document.addEventListener('click', closeNotificationOnOutsideClick);
+    }, 100);
   } else {
     center.style.display = 'none';
+    document.removeEventListener('click', closeNotificationOnOutsideClick);
   }
 };
+
+/**
+ * Close notification center when clicking outside
+ */
+function closeNotificationOnOutsideClick(event) {
+  const center = document.getElementById('notification-center');
+  const bellButton = document.querySelector('[onclick="toggleNotificationCenter()"]');
+  
+  // Check if click is outside notification center and not on the bell button
+  if (center && !center.contains(event.target) && !bellButton?.contains(event.target)) {
+    notificationCenterOpen = false;
+    center.style.display = 'none';
+    document.removeEventListener('click', closeNotificationOnOutsideClick);
+  }
+}
 
 /**
  * Load in-app notifications for current user
@@ -1066,8 +1087,8 @@ async function loadInAppNotifications() {
   const body = document.getElementById('notification-center-body');
   body.innerHTML = '<div class="notification-center-loading"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
   
-  // Get user ID - try multiple fields
-  const userId = auth.user?.user_id || auth.user?._id || auth.user?.username;
+  // Get user ID - try multiple fields (id is returned from auth API)
+  const userId = auth.user?.id || auth.user?._id || auth.user?.user_id || auth.user?.username;
   
   console.log('[InApp] Loading notifications for user:', userId);
   console.log('[InApp] Auth user object:', auth.user);
@@ -1124,7 +1145,7 @@ async function loadInAppNotifications() {
  * Check for unread notifications and update badge
  */
 async function checkUnreadNotifications() {
-  const userId = auth.user?.user_id || auth.user?._id || auth.user?.username;
+  const userId = auth.user?.id || auth.user?._id || auth.user?.user_id || auth.user?.username;
   if (!userId) return;
   
   const res = await apiFetch(`/inapp/unread-count?user_id=${encodeURIComponent(userId)}`);
@@ -1146,7 +1167,7 @@ async function checkUnreadNotifications() {
  * Mark notification as read
  */
 window.markNotificationRead = async function(notificationId) {
-  const userId = auth.user?.user_id || auth.user?._id || auth.user?.username;
+  const userId = auth.user?.id || auth.user?._id || auth.user?.user_id || auth.user?.username;
   if (!userId) return;
   
   const res = await apiFetch(`/inapp/notifications/${notificationId}/read`, {
@@ -1167,7 +1188,7 @@ window.markNotificationRead = async function(notificationId) {
  * Mark all notifications as read
  */
 window.markAllNotificationsRead = async function() {
-  const userId = auth.user?.user_id || auth.user?._id || auth.user?.username;
+  const userId = auth.user?.id || auth.user?._id || auth.user?.user_id || auth.user?.username;
   if (!userId) return;
   
   const res = await apiFetch('/inapp/notifications/read-all', {
@@ -1190,7 +1211,7 @@ window.markAllNotificationsRead = async function() {
 window.deleteNotification = async function(notificationId) {
   if (!confirm('Delete this notification?')) return;
   
-  const userId = auth.user?.user_id || auth.user?._id || auth.user?.username;
+  const userId = auth.user?.id || auth.user?._id || auth.user?.user_id || auth.user?.username;
   if (!userId) return;
   
   const res = await apiFetch(`/inapp/notifications/${notificationId}?user_id=${encodeURIComponent(userId)}`, {

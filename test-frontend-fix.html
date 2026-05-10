@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Frontend Fix</title>
+</head>
+<body>
+    <h1>Testing In-App Notifications Fix</h1>
+    
+    <h2>Steps to Test:</h2>
+    <ol>
+        <li>Open the app at <a href="http://localhost:3000" target="_blank">http://localhost:3000</a></li>
+        <li>Open browser console (F12)</li>
+        <li>Check what's in localStorage:
+            <pre>console.log('Auth user:', JSON.parse(localStorage.getItem('user')))</pre>
+        </li>
+        <li>The user object should have an 'id' field</li>
+        <li>Click the bell icon to open notifications</li>
+        <li>Check console logs for:
+            <pre>[InApp] Loading notifications for user: 69f9f5f9c0e3c31d321fc990</pre>
+        </li>
+        <li>You should see 4 unread notifications!</li>
+    </ol>
+
+    <h2>If Still Not Working:</h2>
+    <p>Run this in browser console to check the API directly:</p>
+    <pre>
+fetch('http://localhost:3000/api/inapp/notifications?user_id=69f9f5f9c0e3c31d321fc990', {
+    headers: {
+        'Authorization': 'Bearer ' + localStorage.getItem('token')
+    }
+})
+.then(r => r.json())
+.then(d => console.log('API Response:', d))
+    </pre>
+
+    <h2>Expected Database State:</h2>
+    <p>Run this to verify notifications exist:</p>
+    <pre>node src/scripts/verify-inapp-setup.js</pre>
+</body>
+</html>
