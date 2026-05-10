@@ -38,16 +38,24 @@ class TemplateService {
       rendered.body = rendered.body.replace(new RegExp(placeholder, 'g'), value);
     });
 
-    // Check for unreplaced variables
+    // Check for unreplaced variables and remove them or replace with defaults
     const unreplacedPattern = /{{(\w+)}}/g;
     const unreplacedInBody = rendered.body.match(unreplacedPattern);
     const unreplacedInSubject = rendered.subject?.match(unreplacedPattern);
     
     if (unreplacedInBody || unreplacedInSubject) {
-      logger.warn('Template has unreplaced variables', {
+      logger.warn('Template has unreplaced variables - removing them', {
         template_id: template.template_id,
         unreplaced: [...(unreplacedInBody || []), ...(unreplacedInSubject || [])]
       });
+      
+      // Remove unreplaced variables from body and subject
+      if (rendered.body) {
+        rendered.body = rendered.body.replace(/{{(\w+)}}/g, '');
+      }
+      if (rendered.subject) {
+        rendered.subject = rendered.subject.replace(/{{(\w+)}}/g, '');
+      }
     }
 
     return rendered;

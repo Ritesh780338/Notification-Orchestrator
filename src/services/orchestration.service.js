@@ -156,8 +156,33 @@ class OrchestrationService {
         return false;
       }
 
-      const rendered = templateService.renderTemplate(template, metadata);
       const userPref = await UserPreference.findOne({ user_id });
+      
+      // Try to get user's full name from User model
+      const User = require('../models/User');
+      let userName = 'User';
+      let userEmail = userPref?.email || '';
+      
+      try {
+        const user = await User.findById(user_id);
+        if (user) {
+          userName = user.fullName;
+          userEmail = user.email;
+        }
+      } catch (err) {
+        logger.warn('Could not fetch user details', { user_id, error: err.message });
+      }
+      
+      // Merge user data with metadata for template rendering
+      const templateData = {
+        ...metadata,
+        first_name: metadata.first_name || userName.split(' ')[0] || 'User',
+        full_name: metadata.full_name || userName || 'User',
+        email: metadata.email || userEmail || '',
+        user_id: user_id
+      };
+
+      const rendered = templateService.renderTemplate(template, templateData);
 
       const result = await retryWithBackoff(async () => {
         return await this.sendViaAdapter(channel, userPref, rendered, notification);
