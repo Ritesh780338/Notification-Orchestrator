@@ -10,7 +10,7 @@ class InAppAdapter {
       console.log('[InAppAdapter] Sending notification:', {
         userId,
         title,
-        body: body.substring(0, 50) + '...',
+        body,  // Show full body in logs
         metadata
       });
 

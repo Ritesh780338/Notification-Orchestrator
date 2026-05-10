@@ -5,12 +5,15 @@ class EmailAdapter {
   constructor() {
     this.transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT,
-      secure: false,
+      port: parseInt(process.env.SMTP_PORT),
+      secure: false, // true for 465, false for other ports
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASSWORD,
       },
+      tls: {
+        rejectUnauthorized: false // Allow self-signed certificates
+      }
     });
   }
 
@@ -19,6 +22,20 @@ class EmailAdapter {
    */
   async send(recipient, subject, body) {
     try {
+      // Validate configuration
+      if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASSWORD) {
+        throw new Error('Email configuration missing. Check SMTP_HOST, SMTP_USER, and SMTP_PASSWORD in .env');
+      }
+
+      console.log('[EmailAdapter] Attempting to send email:', {
+        recipient,
+        subject,
+        from: process.env.SMTP_FROM || 'noreply@notificationorchestrator.com',
+        smtpHost: process.env.SMTP_HOST,
+        smtpPort: process.env.SMTP_PORT,
+        smtpUser: process.env.SMTP_USER
+      });
+
       // Create professional HTML version of the email
       const htmlBody = this.createEmailTemplate(subject, body);
 
@@ -38,6 +55,11 @@ class EmailAdapter {
         subject
       });
 
+      console.log('[EmailAdapter] Email sent successfully:', {
+        messageId: info.messageId,
+        response: info.response
+      });
+
       return {
         success: true,
         messageId: info.messageId,
@@ -48,8 +70,18 @@ class EmailAdapter {
     } catch (error) {
       logger.error('❌ Email sending failed:', {
         error: error.message,
+        code: error.code,
+        command: error.command,
         recipient
       });
+      
+      console.error('[EmailAdapter] Email error details:', {
+        message: error.message,
+        code: error.code,
+        command: error.command,
+        stack: error.stack
+      });
+      
       return {
         success: false,
         error: error.message,

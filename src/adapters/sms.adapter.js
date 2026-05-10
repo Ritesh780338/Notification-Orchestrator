@@ -7,11 +7,12 @@ class SMSAdapter {
     this.provider = process.env.SMS_PROVIDER || 'mock';
     this.senderId = process.env.SMS_SENDER_ID || 'ALERTS';
     this.route = process.env.SMS_ROUTE || '2'; // Default to OTP route
-    this.baseUrl = 'https://app.smslocal.in/api';
+    this.smsLocalBaseUrl = 'https://app.smslocal.in/api';
+    this.fast2smsBaseUrl = 'https://www.fast2sms.com/dev/bulkV2';
   }
 
   /**
-   * Send SMS notification via SMS Local
+   * Send SMS notification via SMS Local or Fast2SMS
    */
   async send(phoneNumber, message, templateId = null) {
     try {
@@ -31,6 +32,75 @@ class SMSAdapter {
           phoneNumber,
           message: 'SMS sent in mock mode (no actual SMS sent)'
         };
+      }
+
+      // Fast2SMS implementation
+      if (this.provider === 'fast2sms') {
+        // Clean phone number (remove +91 if present)
+        const cleanNumber = phoneNumber.replace(/^\+91/, '').replace(/^91/, '').replace(/\D/g, '');
+        
+        if (cleanNumber.length !== 10) {
+          throw new Error('Invalid Indian phone number. Must be 10 digits.');
+        }
+
+        logger.info('Sending SMS via Fast2SMS', {
+          phoneNumber: cleanNumber,
+          messageLength: message.length
+        });
+
+        try {
+          const response = await axios.post(
+            this.fast2smsBaseUrl,
+            {
+              route: 'q', // Quick transactional route
+              message: message,
+              language: 'english',
+              flash: 0,
+              numbers: cleanNumber
+            },
+            {
+              headers: {
+                'authorization': this.apiKey,
+                'Content-Type': 'application/json'
+              },
+              validateStatus: function (status) {
+                return status < 500; // Don't throw on 4xx errors
+              }
+            }
+          );
+
+          logger.info('Fast2SMS API Response', {
+            status: response.status,
+            data: response.data
+          });
+
+          if (response.status === 200 && response.data.return === true) {
+            logger.info('✅ SMS sent successfully via Fast2SMS', {
+              phoneNumber: cleanNumber,
+              messageId: response.data.request_id
+            });
+
+            return {
+              success: true,
+              messageId: response.data.request_id,
+              provider: 'fast2sms',
+              phoneNumber: cleanNumber,
+              response: response.data
+            };
+          } else {
+            const errorMsg = response.data.message || JSON.stringify(response.data) || 'Unknown error';
+            throw new Error(`Fast2SMS Error (${response.status}): ${errorMsg}`);
+          }
+        } catch (axiosError) {
+          if (axiosError.response) {
+            logger.error('Fast2SMS API Error Response', {
+              status: axiosError.response.status,
+              data: axiosError.response.data
+            });
+            throw new Error(`Fast2SMS API Error: ${JSON.stringify(axiosError.response.data)}`);
+          }
+          throw axiosError;
+        }
       }
 
       // SMS Local implementation
@@ -61,7 +131,7 @@ class SMSAdapter {
           params.append('templateid', process.env.SMS_DEFAULT_TEMPLATE_ID);
         }
 
-        const url = `${this.baseUrl}/smsapi?${params.toString()}`;
+        const url = `${this.smsLocalBaseUrl}/smsapi?${params.toString()}`;
 
         logger.info('Sending SMS via SMS Local', {
           phoneNumber: cleanNumber,
@@ -127,7 +197,7 @@ class SMSAdapter {
       throw new Error(`Unsupported SMS provider: ${this.provider}`);
       
     } catch (error) {
-      logger.error('SMS sending failed:', {
+      logger.error('❌ SMS sending failed:', {
         error: error.message,
         phoneNumber,
         provider: this.provider
@@ -146,11 +216,15 @@ class SMSAdapter {
    */
   async getDeliveryReport(messageId) {
     try {
+      if (this.provider === 'fast2sms') {
+        throw new Error('Delivery report not implemented for fast2sms provider');
+      }
+
       if (this.provider !== 'smslocal') {
         throw new Error('Delivery report only available for smslocal provider');
       }
 
-      const url = `${this.baseUrl}/dlrapi?key=${this.apiKey}&messageid=${messageId}`;
+      const url = `${this.smsLocalBaseUrl}/dlrapi?key=${this.apiKey}&messageid=${messageId}`;
       
       const response = await axios.get(url);
       
@@ -184,12 +258,16 @@ class SMSAdapter {
    */
   async checkCredits(route = null) {
     try {
+      if (this.provider === 'fast2sms') {
+        throw new Error('Credits check not implemented for fast2sms provider');
+      }
+
       if (this.provider !== 'smslocal') {
         throw new Error('Credits check only available for smslocal provider');
       }
 
       const checkRoute = route || this.route;
-      const url = `${this.baseUrl}/creditapi?key=${this.apiKey}&route=${checkRoute}`;
+      const url = `${this.smsLocalBaseUrl}/creditapi?key=${this.apiKey}&route=${checkRoute}`;
       
       const response = await axios.get(url);
       
@@ -225,6 +303,16 @@ class SMSAdapter {
     try {
       if (this.provider === 'mock') {
         logger.info('SMS adapter verified (mock mode)');
+        return true;
+      }
+
+      if (this.provider === 'fast2sms') {
+        if (!this.apiKey || this.apiKey === 'your_sms_api_key') {
+          logger.error('Fast2SMS API key not configured');
+          return false;
+        }
+        
+        logger.info('SMS adapter verified (Fast2SMS configured)');
         return true;
       }
 
